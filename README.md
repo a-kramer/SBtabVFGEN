@@ -1,6 +1,6 @@
 # SBtabVFGEN
 
-Convert a Model written in [SBtab](https://www.sbtab.net/), saved as an [Open Document Spreadsheet](https://www.documentfoundation.org/) (ods) to a [VFGEN](http://www.warrenweckesser.net/vfgen/) vector field file (vf)
+Convert a Model written in [SBtab](https://www.sbtab.net/), saved as an [Open Document Spreadsheet](https://www.documentfoundation.org/) (ods) to a [VFGEN](https://warrenweckesser.github.io/vfgen/) vector field file (vf)
 
 ## VFGEN
 
