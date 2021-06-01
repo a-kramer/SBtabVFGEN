@@ -61,7 +61,7 @@ make.cnames <- function(Labels){
     } else {
         Laws=NULL
     }
-    print(Laws)
+    
     return(Laws)
 }
 
@@ -74,9 +74,7 @@ AppendAmounts <- function(S,Quantity,QuantityName,Separator){
 }
 
 .GetLawText <- function(Laws,CompoundName,InitialValue){
-    print(Laws)
     nLaws <- dim(Laws)[2]
-    print(nLaws)
     nC <- length(CompoundName)
     I <- 1:nC
     ConLaw <- list()
@@ -290,19 +288,30 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 }
 
 .GetOutputs <- function(SBtab){
-    ID <- SBtab[["Output"]][["!ID"]]
-    Name <- make.cnames(SBtab[["Output"]][["!Name"]])
-    Formula <-  SBtab[["Output"]][["!Formula"]]
-    Unit <- SBtab[["Output"]][["!Unit"]]
-    Output <- data.frame(ID,Formula,Unit,row.names=Name)
-    return(Output)
+    if ("Output" %in% names(SBtab)){
+        ID <- SBtab[["Output"]][["!ID"]]
+        Name <- make.cnames(SBtab[["Output"]][["!Name"]])
+        Formula <-  SBtab[["Output"]][["!Formula"]]
+        Unit <- SBtab[["Output"]][["!Unit"]]
+        Output <- data.frame(ID,Formula,Unit,row.names=Name)
+        return(Output)
+    } else {
+        return(NULL)
+    }
 }
 
 .GetCompartments <- function(SBtab){
-    ID <- SBtab[["Compartment"]][["!ID"]]
-    Name <- make.cnames(SBtab[["Compartment"]][["!Name"]])
-    Size <-  SBtab[["Compartment"]][["!Size"]]
-    Unit <- SBtab[["Compartment"]][["!Unit"]]
+    if ("Compartment" %in% names(SBtab)){
+        ID <- SBtab[["Compartment"]][["!ID"]]
+        Name <- make.cnames(SBtab[["Compartment"]][["!Name"]])
+        Size <-  SBtab[["Compartment"]][["!Size"]]
+        Unit <- SBtab[["Compartment"]][["!Unit"]]
+    } else {
+        ID <- "SingleCompartment"
+        Name <- "SingleCompartment"
+        Size <- 1.0
+        Unit <- "liter"
+    }
     Comp <- data.frame(ID,Size,Unit,row.names=Name)
     return(Comp)
 }
@@ -374,7 +383,7 @@ UpdateODEandStoichiometry <- function(Term,Compound,FluxName,Expression,Input){
         }else if (compound %in% row.names(Input)){
             j <- (-1)
             message(sprintf("\t\t\t«%s» is an input parameter (a parameter that represents a constant concentration of a substance outside of the model's scope), it has no influx. ODE will be unaffected, but the expression may be used in ReactionFlux calculations\n",compound))            
-        } else if (compound %in% c("null","NULL","NIL","NONE","NA","Ø","[]","{}")) {
+        } else if (is.na(compound) || compound %in% c("null","NULL","NIL","NONE","NA","Ø","[]","{}")) {
             message(sprintf("\t\t\t«%s» (Ø) is a placeholder to formulate degradation in reaction formulae.\n",compound))
             j <- (-2)
         } else {
@@ -434,25 +443,29 @@ ParseReactionFormulae <- function(Compound,Reaction,Expression,Input){
         ## work at all. But perhaps <<- is also bad practice.
 
         ## 1
-        message("Products:")
-        L <- length(b);
-        Term <- UpdateODEandStoichiometry(b,Compound,RName[i],Expression,Input)
-        for (k in 1:L){
-            j <- Term$J[k]
-            if (j>0){
-                ODE[j] <- paste(ODE[j],NFlux(Term$n[k],RName[i]),sep="+")
-                N[j,i] <- N[j,i] + Term$n[k]
+        if (!any(is.na(b))){
+            message("Products:")
+            L <- length(b);
+            Term <- UpdateODEandStoichiometry(b,Compound,RName[i],Expression,Input)
+            for (k in 1:L){
+                j <- Term$J[k]
+                if (j>0){
+                    ODE[j] <- paste(ODE[j],NFlux(Term$n[k],RName[i]),sep="+")
+                    N[j,i] <- N[j,i] + Term$n[k]
+                }
             }
         }
         ## 2
-        message("Reactants:")        
-        L <- length(a);
-        Term <- UpdateODEandStoichiometry(a,Compound,RName[i],Expression,Input)        
-        for (k in 1:L){
-            j <- Term$J[k]
-            if (j>0){
-                ODE[j] <- paste(ODE[j],NFlux(Term$n[k],RName[i]),sep="-")
-                N[j,i] <- N[j,i] - Term$n[k]
+        if (!any(is.na(a))){
+            message("Reactants:")        
+            L <- length(a);
+            Term <- UpdateODEandStoichiometry(a,Compound,RName[i],Expression,Input)        
+            for (k in 1:L){
+                j <- Term$J[k]
+                if (j>0){
+                    ODE[j] <- paste(ODE[j],NFlux(Term$n[k],RName[i]),sep="-")
+                    N[j,i] <- N[j,i] - Term$n[k]
+                }
             }
         }
     }
@@ -728,9 +741,12 @@ OneOrMoreLines <- function(Prefix,Table,Suffix){
     uid <- gsub("/","_per_",uid)
     uid <- gsub("[*[:blank:]]","_",uid)
     uid <- gsub("[()]","",uid)
+    uid <- gsub("\\^1","",uid)
+    uid <- gsub("\\^-1","_inverse",uid)
     uid <- gsub("\\^2","_square",uid)
     uid <- gsub("\\^3","_cube",uid)
-    uid <- gsub("\\^([0-9]+)","_to_the_power_of_\1",uid)
+    uid <- gsub("\\^(-[0-9.e]+)","_to_the_power_of_minus_\\1",uid)
+    uid <- gsub("\\^(+?[0-9.e]+)","_to_the_power_of_\\1",uid)
     uid <- make.names(uid,unique=FALSE)
     if (prnt){
         message("units in «!Unit» column:")
@@ -764,14 +780,14 @@ OneOrMoreLines <- function(Prefix,Table,Suffix){
     a <- gsub("[()]","",unit.str)
     a <- gsub("molarity","mol l^-1",a);
     if (grepl("/",unit.str)){
-        a <- unlist(strsplit(a,split="/",fixed=TRUE))
+        a <- trimws(unlist(strsplit(a,split="/",fixed=TRUE)))
         message(sprintf("«%s» is interpreted as:\n\tNumerator «%s»\n\tDenominator: «%s»\n",unit.str,a[1],a[2]))
     }
     n <- length(a)
     stopifnot(n==1 || n==2)
 
     for (j in 1:n){
-        b <- unlist(strsplit(a[j],split="[* ]"))
+        b <- trimws(unlist(strsplit(a[j],split="[* ]")))
         for (u in b){
             pat <- paste0("^(G|giga|M|mega|k|kilo|c|centi|m|milli|u|μ|micro|n|nano|p|pico|f|femto)?",
                           "(l|L|liter|litre|g|gram|mole?|s|second|m|meter|metre|K|kelvin|cd|candela|A|ampere)",
@@ -950,26 +966,30 @@ OneOrMoreLines <- function(Prefix,Table,Suffix){
         message("Products: ")
         print(B)
         message("---")
-        for (a in A){
-            r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=a)
-            m <- unlist(regmatches(a,r))
-            print(m)
-            RefName <- m[3]
-            spr  <-  Reaction_createReactant(reaction)
-            SimpleSpeciesReference_setSpecies(spr, RefName)
-            if (nchar(m[2])>0){
-                SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
+        if (!any(is.na(A))){
+            for (a in A){
+                r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=a)
+                m <- unlist(regmatches(a,r))
+                print(m)
+                RefName <- m[3]
+                spr  <-  Reaction_createReactant(reaction)
+                SimpleSpeciesReference_setSpecies(spr, RefName)
+                if (nchar(m[2])>0){
+                    SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
+                }
             }
         }
-        for (b in B){
-            r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=b)
-            m <- unlist(regmatches(b,r))
-            print(m)
-            RefName <- m[3]
-            spr  <-  Reaction_createProduct(reaction)
-            SimpleSpeciesReference_setSpecies(spr, RefName)
-            if (nchar(m[2])>0){
-                SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
+        if (!any(is.na(B))){
+            for (b in B){
+                r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=b)
+                m <- unlist(regmatches(b,r))
+                print(m)
+                RefName <- m[3]
+                spr  <-  Reaction_createProduct(reaction)
+                SimpleSpeciesReference_setSpecies(spr, RefName)
+                if (nchar(m[2])>0){
+                    SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
+                }
             }
         }
     }
@@ -1157,6 +1177,7 @@ sbtab_to_vfgen <- function(SBtabDoc,cla=TRUE){
     Input <- .GetInputs(SBtab)
     Defaults <- .GetDefaults(SBtab)
     Comp  <- .GetCompartments(SBtab)
+
     if (require(libSBML)){
         ## definitely without conservation laws
         SBML <- .make.sbml(document.name,Defaults,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,Comp)
@@ -1232,8 +1253,8 @@ sbtab_to_vfgen <- function(SBtabDoc,cla=TRUE){
     } else {
         nLaws <- dim(Laws)[2]
         N <- ModelStructure$Stoichiometry
-        message("Stoichiometric Matrix:")
-        print(N)
+        ##message("Stoichiometric Matrix:")
+        ##print(N)
         message("---")
         message(sprintf("Conservation Law dimensions:\t%i × %i\n",dim(Laws)[1],dim(Laws)[2]))
         message(sprintf("To check that the conservation laws apply: norm(t(StoichiometryMatrix) * ConservationLaw == %6.5f)",norm(t(N) %*% Laws),type="F"))
@@ -1270,7 +1291,5 @@ sbtab_to_vfgen <- function(SBtabDoc,cla=TRUE){
     fname<-sprintf("%s.mod",H)
     cat(unlist(Mod),sep="\n",file=fname)
     message(sprintf("The mod content was written to: %s\n",fname))
-
-    
-    return(vfgen)
+##    return(vfgen)
 }

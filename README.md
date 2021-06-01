@@ -482,3 +482,13 @@ have used the `.tsv` form of sbml, not direct `.ods` input.
 
 [Here](libsbml.md) is a small (incomplete) list of libsbml functions
 in R (that we used).
+
+# Conversion from NeuroRD
+
+The script [NeuroRDtoSBtab.R](./NeuroRDtoSBtab.R) contains a converter function 
+```R
+NeuroRD_to_SBtab(file)
+```
+that creates a series of tsv files given a flat NeuroRD file (include instructions are ignored).
+
+This is an early attempt and perhaps doesn't work right.
