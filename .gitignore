@@ -1,3 +1,6 @@
+*~
+*.tsv
+
 # History files
 .Rhistory
 .Rapp.history
