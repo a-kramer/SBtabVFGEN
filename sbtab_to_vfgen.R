@@ -839,6 +839,7 @@ OneOrMoreLines <- function(Prefix,Table,Suffix){
     all.uid <- .unit.id.from.string(Compound$Unit)
     num.species <- nrow(Compound)
     Name <- row.names(Compound)
+    
     for (i in 1:num.species){
         print(Name[i])
         sp <- Model_createSpecies(sbml)
@@ -853,6 +854,9 @@ OneOrMoreLines <- function(Prefix,Table,Suffix){
         if (!grepl("^(0|F(ALSE)?)?$",Ai)){
             Species_setBoundaryCondition(sp,"true")
             Species_setName(sp, Ai)
+        } else if (Compound$IsConstant[i]) {
+            Species_setBoundaryCondition(sp,"true")
+            Species_setName(sp, Name[i])
         } else {
             Species_setName(sp, Name[i])
         }
