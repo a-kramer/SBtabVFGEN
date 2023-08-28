@@ -99,7 +99,7 @@
 	Name <- row.names(Reaction)
 	OneCompartmentModel=FALSE;
 	Compartment.id <- row.names(Compartment)
-	if (is.na(Compartment) || nrow(Compartment)==1){
+	if (all(is.na(Compartment)) || nrow(Compartment)==1){
 		OneCompartmentModel=TRUE;
 	}
 	AB <- strsplit(Reaction$Formula,split="<=>")
