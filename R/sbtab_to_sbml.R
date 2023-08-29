@@ -181,7 +181,7 @@
 				j <- grep(pat,Compound$Assignment)
 				stopifnot(length(j)==1)
 				VarName <- row.names(Compound)[j]
-				if (is.na(VarName)) {
+				if (all(is.na(VarName))) {
 					print(ExpressionName[i])
 					print(pat)
 					print(j)
