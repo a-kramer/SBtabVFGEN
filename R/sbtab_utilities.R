@@ -359,10 +359,10 @@ sbtab.valid <- function(tab){
 #' @param initialTime t0 for the time series experiment: y(t0) = y0
 #' @param initialState (vector) initial values of the state variables, at t0
 #' @return list with these quantities as list items
-time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2]),errorValues=0.05*outputValues+0.05*max(outputValues),inputParameters,initialTime=as.double(min(outputTimes)),initialState,events=NA){
+time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2]),errorValues=0.05*outputValues+0.05*max(outputValues),inputParameters=c(),initialTime=as.double(min(outputTimes)),initialState,events=NA){
 	outNames <- names(outputValues)
 	names(outputValues) <- outNames %s% ">"
-	if (is.null(inputParameters))
+	if (is.null(inputParameters) || all(is.na(inputParameters)))
 		inputParameters <- c()
 	if (is.null(events) || all(is.na(events))){
 		experiment <- list(
@@ -388,7 +388,7 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 }
 
 sbtab.events <- function(ename,tab){
-	if (is.na(ename)) {
+	if (all(is.na(ename))) {
 		return(NULL)
 	}
 	if ("Input" %in% names(tab)){
@@ -534,10 +534,10 @@ sbtab.data <- function(tab){
 				events=events
 			)
 		} else if (dose.response[i]){
-			if (is.null(input)){
-				u <- NULL
-			} else {
+			if (!is.null(input)) {
 				u <- update_from_table(input[,i],tab[[id[i]]])
+			} else {
+				u <- repmat(NA,m)
 			}
 			OUT <- as.data.frame(t(update_from_table(v.out,tab[[id[i]]],prefix=">")))
 			ERR <- as.data.frame(t(update_from_table(v.out,tab[[id[i]]],prefix="~")))
