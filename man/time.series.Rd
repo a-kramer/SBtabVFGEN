@@ -8,7 +8,7 @@
   outputValues,
   outputTimes = as.double(1:dim(outputValues)[2]),
   errorValues = 0.05 * outputValues + 0.05 * max(outputValues),
-  inputParameters,
+  inputParameters = c(),
   initialTime = as.double(min(outputTimes)),
   initialState,
   events = NA
