@@ -391,7 +391,11 @@ sbtab.events <- function(ename,tab){
 	if (is.na(ename)) {
 		return(NULL)
 	}
-	ni <- ifelse("Input" %in% names(tab),nrow(tab$Input),0)
+	if ("Input" %in% names(tab)){
+		ni <- nrow(tab$Input)
+	} else {
+		ni <- 0
+	}
 	if (nzchar(ename) && ename %in% names(tab)){
 		n.sv <- nrow(tab$Compound)
 		n.par <- nrow(tab$Parameter) + ni
@@ -530,7 +534,11 @@ sbtab.data <- function(tab){
 				events=events
 			)
 		} else if (dose.response[i]){
-			u <- ifelse(!is.null(input),update_from_table(input[,i],tab[[id[i]]]),NULL)
+			if (is.null(input)){
+				u <- NULL
+			} else {
+				u <- update_from_table(input[,i],tab[[id[i]]])
+			}
 			OUT <- as.data.frame(t(update_from_table(v.out,tab[[id[i]]],prefix=">")))
 			ERR <- as.data.frame(t(update_from_table(v.out,tab[[id[i]]],prefix="~")))
 			outTime <- E[["!Time"]]
