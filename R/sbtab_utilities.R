@@ -217,6 +217,40 @@ sbtab_from_tsv <- function(tsv.file=dir(pattern='[.]tsv$'),verbose=TRUE){
 	return(SBtab)
 }
 
+#' A parser for Excel files with SBtab document structure
+#'
+#' This function uses the readxl package to read the file.  SBtab
+#' sheets are themselves tables dedicated to a specific type of model
+#' property: Reaction, Compound, Parameter, etc.  The first column
+#' will be used as the row.names. The second row will be used as
+#' column names, the first row is used to determine the document-name
+#' and table-name.
+#'
+#' @param excel.file a string (file's name)
+#' @return SBtab a list of tables (data.frames), one per ods sheet
+#'     SBtab[['TableName']] is a data.frame, comment(SBtab) is
+#'     the name of the document
+#' @keywords import
+#' @examples
+#' model.sbtab<-sbtab_from_excel('model.xlsx')
+#' @export
+sbtab_from_excel <- function(excel.file=dir(pattern='[.]xlsx?$')[1]){
+	Sheets <- readxl::excel_sheets(excel.file)
+	SBtab <- list()
+	for (sh in Sheets) {
+		header <- paste0(as.character(readxl::read_excel(excel.file,sheet=sh,n_max=1,col_names=FALSE)[1,]),collapse=" ")
+		TableName <- sbtab.header.value(header,'TableName')
+		print(TableName)
+		SBtab[[TableName]] <- as.data.frame(readxl::read_excel(excel.file,sheet=sh,col_names=TRUE,skip=1))
+		row.names(SBtab[[TableName]]) <- make.cnames(SBtab[[TableName]][,1])
+		attr(SBtab[[TableName]],"TableName") <- TableName
+		document.name <- sbtab.header.value(header,'Document')
+	}
+	comment(SBtab) <- document.name
+	return(SBtab)
+}
+
+
 #' collect all variable names
 #'
 #' this function collects all varibale names in SBtab, here we use the
@@ -391,7 +425,11 @@ sbtab.events <- function(ename,tab){
 	if (all(is.na(ename))) {
 		return(NULL)
 	}
-	ni <- ifelse("Input" %in% names(tab),nrow(tab$Input),0)
+	if ("Input" %in% names(tab)){
+		ni <- nrow(tab$Input)
+	} else {
+		ni <- 0
+	}
 	if (nzchar(ename) && ename %in% names(tab)){
 		n.sv <- nrow(tab$Compound)
 		n.par <- nrow(tab$Parameter) + ni

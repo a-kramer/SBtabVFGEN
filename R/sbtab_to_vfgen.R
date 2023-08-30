@@ -428,7 +428,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	## Inputs
 	vfgen[["input"]] <- sprintf(fmt$input,row.names(Input),Input$DefaultValue)
 	## Conservation Laws
-	if (is.null(ConLaw) || is.na(ConLaw)){
+	if (is.null(ConLaw) || any(is.na(ConLaw))){
 		vfgen[["ConservationLaw"]] <- NULL
 		vfgen[["ConservationInput"]] <- NULL
 		nLaws <- 0
@@ -476,7 +476,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	}
 	##
 	N <- dim(Compound)[1]
-	if (!is.null(ConLaw) && !is.na(ConLaw) && is.list(ConLaw)) {
+	if (!is.null(ConLaw) && !any(is.na(ConLaw)) && is.list(ConLaw)) {
 		ConLaw <- as.data.frame(ConLaw)
 		k <- ConLaw$Eliminates
 		CName <- row.names(Compound)[k]
@@ -580,11 +580,11 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 			}else{
 				ex <- charmatch(a,rownames(Expression))
 			}
-			if (!is.na(ex)){
+			if (!any(is.na(ex))){
 				l[i] <- TRUE
 				F[i] <- row.names(Expression[ex,])
 				message(sprintf("Compound «%s» is mapped to expression %i «%s» (matched by ID).\n",a,ex,Expression[ex,"Name"]))
-			} else if (!is.na(Expression[a,"Formula"])){
+			} else if (!any(is.na(Expression[a,"Formula"]))){
 				l[i] <- TRUE
 				F[i] <- a
 				message(sprintf("Compound «%s» is mapped to expression «%s» (matched by Name).\n",a,Expression[a,"Name"]))
