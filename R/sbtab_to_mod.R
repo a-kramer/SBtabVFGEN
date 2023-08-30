@@ -70,7 +70,7 @@ NeuronUnit<-function(unit){
 		stop("Compound names should not end in '0'. \nNEURON will create initial values by appending a '0' to the state variable names. \nShould your variables contain var1 and var10, NEURON will also create var10 and var100 from them, which will be in conflict with your names. Please choose different names in the source files (SBtab).")
 	}
 	## Conservation Laws
-	if (is.null(ConLaw) || is.na(ConLaw)){
+	if (is.null(ConLaw) || all(is.na(ConLaw))){
 		ConservationLaw <- NULL
 		ConservationInput <- NULL
 		CName <- NULL
