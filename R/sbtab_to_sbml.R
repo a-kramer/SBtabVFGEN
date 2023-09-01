@@ -63,6 +63,7 @@
 		libSBML::Species_setCompartment(sp, CompName)
 		libSBML::Species_setUnits(sp,SubstanceUnitID)
 		libSBML::Species_setInitialConcentration(sp, Compound$InitialValue[i])
+		libSBML::Species_setHasOnlySubstanceUnits(sp, FALSE)
 		Ai <- Compound$Assignment[i]
 		if (Compound$IsConstant[i]){
 			libSBML::Species_setBoundaryCondition(sp,"true")
@@ -233,6 +234,54 @@
 	}
 }
 
+default_substance_unit <- function(Compound){
+	comp_units  <- table(Compound$Unit)
+	u_name <- names(sort(comp_units,decreasing=TRUE))[1]
+	unit <- unit.from.string(u_name)
+	w <- which(unit$kind=='litre')
+	if (length(w)==1 && nrow(unit)>1){
+		return(unit[-w,])
+	} else {
+		return(unit)
+	}
+}
+
+default_time_unit <- function(Parameter){
+	par_units  <- Parameter$Unit
+	for (u in par_units) {
+		unit <- unit.from.string(u)
+		w <- which(unit$kind=='second')
+		if (length(w)==1){
+			u_time<-unit[w,]
+			u_time$exponent <- 1.0
+			return(u_time)
+		}
+	}
+	warning("Unable to determine default time unit from parameter units.")
+	print(table(par_units))
+	return(unit.from.string("s"))
+}
+
+default_volume_unit <- function(Compartment){
+	C_units  <- Compartment$Unit
+	for (u in C_units) {
+		unit <- unit.from.string(u)
+		## try liters
+		w <- which(unit$kind=='litre')
+		if (length(w)==1){
+			return(unit[w,])
+		}
+		## try cubic meters
+		w <- which(unit$kind=='metre' && unit$exponent==3)
+		if (length(w)==1){
+			return(unit[w,])
+		}
+	}
+	warning("Unable to determine default volume unit from compartment size units.")
+	print(table(C_units))
+	return(unit.from.string("s"))
+}
+
 #' Create an SBML model from Tables
 #'
 #' This function creates a character vector that contains the
@@ -258,13 +307,12 @@
 	libSBML::Model_setId(sbml,H)
 	default.id <- row.names(Defaults)
 	## default units
-	## substance
-	for (i in 1:nrow(Defaults)){
-		message(sprintf("default unit «%s» (%s)",default.id[i],Defaults$Unit[i]))
-		unit <- unit.from.string(Defaults$Unit[i])
-		.create.sbml.unit(sbml,unit,default.id[i])
-	}
-
+	.create.sbml.unit(sbml,default_substance_unit(Compound),"substance")
+	.create.sbml.unit(sbml,default_time_unit(Parameter),"time")
+	.create.sbml.unit(sbml,default_volume_unit(Comp),"volume")
+	.create.sbml.unit(sbml,unit.from.string("micrometer^2"),"area")
+	.create.sbml.unit(sbml,unit.from.string("micrometer"),"length")
+	##
 	u.units <- .unique.units(sbml,c(Expression$Unit,Compound$Unit,Parameter$Unit,Constant$Unit,Input$Unit,Output$Unit,Comp$Unit))
 	CompName <- row.names(Comp)
 	print(CompName)
