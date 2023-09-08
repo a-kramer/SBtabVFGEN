@@ -149,7 +149,7 @@ simple.unit <- function(u){
 	## an empty unit means that the value is dimensionless (the unit is '1')
 	if (u == "") return(data.frame(scale=u.s,multiplier=u.m,exponent=u.x,kind=u.k))
 	## um, actually, kg is an SI unit "kind", but doesn't take other prefixes
-	if (grepl("^kg$",u)){
+	if (grepl("^kg|kilogram$",u)){
 		u.k <- "kilogram"
 		u.s <- 0
 		u.x <- 1
@@ -169,7 +169,7 @@ simple.unit <- function(u){
 		u.k <- c(unit.kind("mole"),unit.kind("litre"))
 		u.m <- c(u.m,1)
 		u.x <- c(u.x,-u.x)
-		u.s <- c(u.s,1)
+		u.s <- c(u.s,0)
 	}
 	return(data.frame(scale=u.s,multiplier=u.m,exponent=u.x,kind=u.k))
 }
