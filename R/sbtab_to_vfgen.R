@@ -460,7 +460,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	return(vfgen)
 }
 
-.write.txt <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw){
+.write.txt <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL){
 	files<-c("StateVariables.txt","Parameters.txt","ODE.txt")
 	if (!is.null(Constant)) {
 		write.table(Constant$Value,row.names=row.names(Constant),col.names=FALSE,sep='\t',file="Constants.txt",quote=FALSE)
@@ -494,7 +494,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	CNames<-row.names(Compound)
 	RNames<-row.names(Reaction)
 	write.table(Compound[i,c('InitialValue','Unit')],row.names=CNames[i],col.names=FALSE,sep='\t',file="StateVariables.txt",quote=FALSE)
-	write.table(Reaction[i,'Flux'],row.names=RNames[i],col.names=FALSE,sep='\t',append=TRUE,file="Expressions.txt",quote=FALSE)
+	write.table(Reaction[,'Flux'],row.names=RNames,col.names=FALSE,sep='\t',append=TRUE,file="Expressions.txt",quote=FALSE)
 	if (!is.null(Output)) {
 		write.table(Output[,'Formula'],row.names=row.names(Output),col.names=FALSE,sep='\t',file="OutputFunctions.txt",quote=FALSE)
 		files<-c(files,"OutputFunctions.txt")
