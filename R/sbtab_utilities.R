@@ -482,6 +482,16 @@ sbtab.events <- function(ename,tab){
 	return(list(time=event.time,tf=tf))
 }
 
+replaceConserved <- function(tab,conLaws){
+	if (is.null(conLaws) || all(is.na(conLaws))) return(tab)
+	oldInput <- subset(tab$Input,select=c("!DefaultValue"),drop=FALSE)
+	newInput <- subset(conLaws,select='Constant',drop=FALSE)
+	names(newInput) <- "!DefaultValue"
+	tab$Input <- rbind(oldInput,newInput)
+	tab$Compound <- tab$Compound[-conLaws$Eliminates,]
+	return(tab)
+}
+
 #' Read data from SBtab
 #'
 #' This function reads all datasets from SBtab Documents that are
@@ -492,16 +502,20 @@ sbtab.events <- function(ename,tab){
 #' time series experiments, possibly with scheduled events.
 #' @param tab a list of data.frames with SBtab content
 #' @export
-sbtab.data <- function(tab){
+sbtab.data <- function(tab,conLaws=NULL){
 	l <- grepl("([tT]able([oO]f)?)?[eE]xperiments?|[mM]easurements?|[sS]imulations?",names(tab))
 	if (any(l) && sum(l)==1) {
 		E <- tab %1% l
 	} else {
-		warning("There must be exactly one Table of Experiments.")
+		warning("There must be exactly one Table of Experiments. Naming unclear.")
 		print(names(tab)[l])
 		return(NA)
 	}
 	out.id <- row.names(tab$Output)
+	if (!is.null(conLaws)){
+		tab<-replaceConserved(tab,conLaws)
+	}
+
 	if ("Input" %in% names(tab)){
 		input.id <- row.names(tab$Input)
 	} else {
@@ -514,7 +528,7 @@ sbtab.data <- function(tab){
 		type <- E %1% l
 		time.series <- grepl("[Tt]ime[_ ][Ss]eries",type,ignore.case=TRUE)
 		dose.response <- grepl("[Dd]ose[_ ][Rr]esponse",type,ignore.case=TRUE)
-		dose.sequence <- grepl("[Dd]ose[ _][Ss]equence",type,ignore.case=TRUE)
+		dose.sequence <- grepl("[Dd]ose[_ ][Ss]equence",type,ignore.case=TRUE)
 	} else {
 		time.series <- rep(TRUE,n) # by default
 		dose.response <- !time.series
