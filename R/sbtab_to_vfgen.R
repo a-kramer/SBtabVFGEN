@@ -652,6 +652,6 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	fname<-sprintf("%s.mod",H)
 	cat(unlist(Mod),sep="\n",file=fname)
 	message(sprintf("The mod content was written to: %s\n",fname))
-
+	save(ConLaw,file="ConservationLaws.RData")
 	return(ConLaw)
 }
