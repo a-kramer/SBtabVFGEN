@@ -63,9 +63,19 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' the table has columns that name members of v (also named) they will
 #' be used. The M will have as many columns as the table has rows.
 #'
+#' When the columns in the Table have a prefix, this can be
+#' compensated: say, the names(v) are c("a", "b", "c") but in the
+#' Table we have names(Table) as c(">a",">b",">abc",">d") then setting
+#' prefix to ">" will match a and b correctly and none of the others.
+#' 
+#' Whenever one of the items in v has a name ending in _ConservedConst
+#' it is assumed to be the result of conservation law analysis and
+#' matching is done disregarding the _ConservedConst suffix.
+#'
 #' @param v the vector to update
 #' @param Table a table with column names partially matching those in
 #'     v
+#' @param prefix in the Table, the columns are named "paste(suffix,names(v))"
 #' @return a matrix with various versions of v (columns) one per
 #'     setting described in data.frame Table. The names can have a ">"
 #'     prefix in the names (see SBtab rules)
@@ -88,19 +98,23 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' a   1   1   1
 #' b   2   2   2
 #' c   3   3   3
-update_from_table <- function(v,Table,prefix=">"){
+update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
 	if (is.null(v) || is.null(Table)) return(NULL)
-	N <- names(v)
+	N <- names(v) %s% v.strip
 	stopifnot(is.data.frame(Table))
 	n <- nrow(Table)
 	M <- matrix(v,nrow=length(v),ncol=n)
-	rownames(M)<-names(v)
+	rownames(M)<-N
+	# remove the prefix
 	l <- startsWith(names(Table),prefix)
-	T<-Table[l]
+	T <- Table[l]
 	names(T)<-sub(prefix,"",names(Table[l]))
-	NT <- N[N %in% names(T)]
-	M[NT,] <- t(T[NT])
-	colnames(M)<-rownames(Table)
+	l <- N %in% names(T)
+	if (any(l)){
+		NT <- N[l]
+		M[NT,] <- t(T[NT])
+		colnames(M)<-rownames(Table)
+	}
 	return(M)
 }
 
@@ -512,8 +526,15 @@ sbtab.data <- function(tab,conLaws=NULL){
 		return(NA)
 	}
 	out.id <- row.names(tab$Output)
+	cons <- NULL
 	if (!is.null(conLaws)){
-		tab<-replaceConserved(tab,conLaws)
+		lawMatrix <- attr(conLaws,"lawMatrix")
+		initVal <- sbtab_quantity(tab$Compound) # this is the full vector
+		conservedConst <- t(lawMatrix) %*% update_from_table(initVal,E)
+		rownames(conservedConst) <- row.names(conLaws)
+		tab <- replaceConserved(tab,conLaws)
+	} else {
+		conservedConst <- NULL
 	}
 
 	if ("Input" %in% names(tab)){
@@ -544,6 +565,7 @@ sbtab.data <- function(tab,conLaws=NULL){
 	} else {
 		input <- NULL
 	}
+	input <- rbind(input,conservedConst)
 	id <- row.names(E)
 
 	if ("!Event" %in% names(E)){
@@ -552,7 +574,7 @@ sbtab.data <- function(tab,conLaws=NULL){
 		event.names <- rep(NA,n)
 	}
 
-	for (i in 1:n){
+	for (i in seq(n)){
 		stopifnot(id[i] %in% names(tab))
 		tNames <- names(tab[[id[i]]])
 		l <- grepl(">([a-zA-Z][^ ]*)",tNames)
