@@ -303,7 +303,7 @@ UpdateODEandStoichiometry <- function(Term,Compound,FluxName,Expression,Input){
 		} else if (compound %in% row.names(Input)){
 			j <- (-1)
 			cat(sprintf("\t\t\t«%s» is an input parameter (a parameter that represents a constant concentration of a substance outside of the model's scope), it has no influx. ODE will be unaffected, but the expression may be used in ReactionFlux calculations\n",compound))
-		} else if (compound %in% c("null","NULL","NIL","NONE","NA","Ø","[]","{}")) {
+		} else if (compound %in% c("null","NULL","NIL","NONE","NA","0","∅","Ø","[]","{}")) {
 			cat(sprintf("\t\t\t«%s» (Ø) is a placeholder to formulate degradation in reaction formulae.\n",compound))
 			j <- (-2)
 		} else {
@@ -614,6 +614,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 			message(sprintf("Conservation Law dimensions:\t%i × %i\n",dim(Laws)[1],dim(Laws)[2]))
 			message(sprintf("To check that the conservation laws apply: norm(t(StoichiometryMatrix) * ConservationLaw == %6.5f)",norm(t(N) %*% Laws,type="F")))
 			ConLaw <- .GetLawText(Laws,row.names(Compound),Compound$InitialValue)
+			attr(ConLaw,"lawMatrix") <- Laws
 			PrintConLawInfo(ConLaw,row.names(Compound),document.name)
 			if (require("hdf5r")){
 				f5 <- h5file("ConservationLaws.h5",mode="w")

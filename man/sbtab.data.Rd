@@ -4,7 +4,7 @@
 \alias{sbtab.data}
 \title{Read data from SBtab}
 \usage{
-sbtab.data(tab)
+sbtab.data(tab, conLaws = NULL)
 }
 \arguments{
 \item{tab}{a list of data.frames with SBtab content}

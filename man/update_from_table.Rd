@@ -4,13 +4,15 @@
 \alias{update_from_table}
 \title{Update a named vector with values from a table}
 \usage{
-update_from_table(v, Table, prefix = ">")
+update_from_table(v, Table, prefix = ">", v.strip = "_ConservedConst$")
 }
 \arguments{
 \item{v}{the vector to update}
 
 \item{Table}{a table with column names partially matching those in
 v}
+
+\item{prefix}{in the Table, the columns are named "paste(suffix,names(v))"}
 }
 \value{
 a matrix with various versions of v (columns) one per
@@ -31,6 +33,15 @@ The returned value M has several copies of vector v
 with some values changed accoring to a table (Qantity Matrix) If
 the table has columns that name members of v (also named) they will
 be used. The M will have as many columns as the table has rows.
+
+When the columns in the Table have a prefix, this can be
+compensated: say, the names(v) are c("a", "b", "c") but in the
+Table we have names(Table) as c(">a",">b",">abc",">d") then setting
+prefix to ">" will match a and b correctly and none of the others.
+
+Whenever one of the items in v has a name ending in _ConservedConst
+it is assumed to be the result of conservation law analysis and
+matching is done disregarding the _ConservedConst suffix.
 }
 \examples{
 > v<-c(1,2,3)
