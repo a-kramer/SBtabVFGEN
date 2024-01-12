@@ -88,6 +88,7 @@ AppendAmounts <- function(S,Quantity,QuantityName,Separator){
 		message(LawText)
 		message(sprintf("This will comment out compound %i («%s», initial value: %g), Conserved Constant = %f\n",k,CompoundName[k],InitialValue[k],Const))
 	}
+	ConLaw <- as.data.frame(ConLaw,row.names=ConLaw$ConstantName)
 	return(ConLaw)
 }
 
@@ -477,7 +478,6 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	##
 	N <- dim(Compound)[1]
 	if (!is.null(ConLaw) && !any(is.na(ConLaw)) && is.list(ConLaw)) {
-		ConLaw <- as.data.frame(ConLaw)
 		k <- ConLaw$Eliminates
 		CName <- row.names(Compound)[k]
 		write.table(ConLaw[,c('Constant')],row.names=row.names(ConLaw),col.names=FALSE,sep='\t',append=TRUE,file="Parameters.txt",quote=FALSE)
@@ -652,6 +652,6 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	fname<-sprintf("%s.mod",H)
 	cat(unlist(Mod),sep="\n",file=fname)
 	message(sprintf("The mod content was written to: %s\n",fname))
-
+	save(ConLaw,file="ConservationLaws.RData")
 	return(ConLaw)
 }
