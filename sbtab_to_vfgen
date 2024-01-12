@@ -2,6 +2,7 @@
 
 library(SBtabVFGEN)
 args <- commandArgs(TRUE)
+conLawAnalysis <- any(c("--cla","-c","--conservation-law-analysis") %in% args)
 
 if (length(args)>0){
     f <- file.exists(args)
@@ -17,10 +18,10 @@ if (length(args)>0){
 
 if (length(model.tsv)>0){
     model.sbtab<-sbtab_from_tsv(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=FALSE)
+    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
 }
 
 if (length(model.ods)>0){
     model.sbtab<-sbtab_from_ods(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=FALSE)
+    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
 }
