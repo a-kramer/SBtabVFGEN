@@ -19,13 +19,15 @@ if (length(args)>0){
 }
 
 if (length(model.tsv) > 0){
-    model.sbtab<-sbtab_from_tsv(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+	model.sbtab<-sbtab_from_tsv(model.tsv)
+	sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
 }
 
 if ((n<-length(model.ods)) > 0){
-    model.sbtab<-sbtab_from_ods(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+	for (i in seq(n)){
+		model.sbtab<-sbtab_from_ods(model.ods[i])
+		sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+	}
 }
 
 if ((n<-length(model.xlsx)) > 0){
