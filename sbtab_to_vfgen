@@ -8,20 +8,31 @@ if (length(args)>0){
     f <- file.exists(args)
     tsv <- grepl('.*[.]tsv$',args[f])
     ods <- grepl('.*[.]ods$',args[f])
+    xlsx <- grepl('.*[.]xlsx$',args[f])
     model.tsv <- args[f & tsv]
     model.ods <- args[f & ods]
+    model.xlsx <- args[f & xlsx]
 } else {
-    model.tsv<-dir(pattern='.*[.]tsv$')
+    model.tsv<-dir(pattern='[.]tsv$')
     message('without any command line arguments, I will use all tsv file in this folder: ')
     message(sprintf("«%s»",model.tsv))
 }
 
-if (length(model.tsv)>0){
-    model.sbtab<-sbtab_from_tsv(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+if (length(model.tsv) > 0){
+	model.sbtab<-sbtab_from_tsv(model.tsv)
+	sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
 }
 
-if (length(model.ods)>0){
-    model.sbtab<-sbtab_from_ods(model.tsv)
-    sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+if ((n<-length(model.ods)) > 0){
+	for (i in seq(n)){
+		model.sbtab<-sbtab_from_ods(model.ods[i])
+		sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+	}
+}
+
+if ((n<-length(model.xlsx)) > 0){
+	for (i in seq(n)){
+		model.sbtab<-sbtab_from_ods(model.xlsx[i])
+		sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
+	}
 }
