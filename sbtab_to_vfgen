@@ -6,9 +6,9 @@ conLawAnalysis <- any(c("--cla","-c","--conservation-law-analysis") %in% args)
 
 if (length(args)>0){
     f <- file.exists(args)
-    tsv <- grepl('.*[.]tsv$',args[f])
-    ods <- grepl('.*[.]ods$',args[f])
-    xlsx <- grepl('.*[.]xlsx$',args[f])
+    tsv <- grepl('.*[.]tsv$',args)
+    ods <- grepl('.*[.]ods$',args)
+    xlsx <- grepl('.*[.]xlsx$',args)
     model.tsv <- args[f & tsv]
     model.ods <- args[f & ods]
     model.xlsx <- args[f & xlsx]

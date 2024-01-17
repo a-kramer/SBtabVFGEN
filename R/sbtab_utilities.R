@@ -496,15 +496,15 @@ sbtab.events <- function(ename,tab){
 	return(list(time=event.time,tf=tf))
 }
 
-replaceConserved <- function(tab,conLaws){
-	if (is.null(conLaws) || all(is.na(conLaws))) return(tab)
-	oldInput <- subset(tab$Input,select=c("!DefaultValue"),drop=FALSE)
-	newInput <- subset(conLaws,select='Constant',drop=FALSE)
-	names(newInput) <- "!DefaultValue"
-	tab$Input <- rbind(oldInput,newInput)
-	tab$Compound <- tab$Compound[-conLaws$Eliminates,]
-	return(tab)
-}
+## replaceConserved <- function(tab,conLaws){
+## 	if (is.null(conLaws) || all(is.na(conLaws))) return(tab)
+## 	oldInput <- subset(tab$Input,TRUE,select="!DefaultValue",drop=FALSE)
+## 	newInput <- subset(conLaws,TRUE,select='Constant',drop=FALSE)
+## 	names(newInput) <- "!DefaultValue"
+## 	tab$Input <- rbind(oldInput,newInput)
+## 	tab$Compound <- tab$Compound[-conLaws$Eliminates,]
+## 	return(tab)
+## }
 
 #' Read data from SBtab
 #'
@@ -532,7 +532,7 @@ sbtab.data <- function(tab,conLaws=NULL){
 		initVal <- sbtab_quantity(tab$Compound) # this is the full vector
 		conservedConst <- t(lawMatrix) %*% update_from_table(initVal,E)
 		rownames(conservedConst) <- row.names(conLaws)
-		tab <- replaceConserved(tab,conLaws)
+		#tab <- replaceConserved(tab,conLaws)
 	} else {
 		conservedConst <- NULL
 	}
