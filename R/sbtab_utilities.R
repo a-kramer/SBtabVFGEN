@@ -527,14 +527,16 @@ sbtab.data <- function(tab,conLaws=NULL){
 	}
 	out.id <- row.names(tab$Output)
 	cons <- NULL
+	initVal <- sbtab_quantity(tab$Compound)
 	if (!is.null(conLaws)){
 		lawMatrix <- attr(conLaws,"lawMatrix")
-		initVal <- sbtab_quantity(tab$Compound) # this is the full vector
 		conservedConst <- t(lawMatrix) %*% update_from_table(initVal,E)
+		initVal <- update_from_table(initVal[-conLaws$Eliminates],E) # this is the full vector
 		rownames(conservedConst) <- row.names(conLaws)
 		#tab <- replaceConserved(tab,conLaws)
 	} else {
 		conservedConst <- NULL
+		initVal <- update_from_table(initVal,E)
 	}
 
 	if ("Input" %in% names(tab)){
@@ -557,8 +559,6 @@ sbtab.data <- function(tab,conLaws=NULL){
 	}
 
 	t0 <- E %1% grepl("^!([tT]0|[Ii]nitialTime)$",names(E))
-	v <- sbtab_quantity(tab$Compound)
-	initVal <- update_from_table(v,E)
 	if ("Input" %in% names(tab)){
 		v <- sbtab_quantity(tab$Input)
 		input <- update_from_table(v,E)
