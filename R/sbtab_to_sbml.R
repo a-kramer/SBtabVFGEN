@@ -62,7 +62,12 @@
 
 		libSBML::Species_setCompartment(sp, CompName)
 		libSBML::Species_setUnits(sp,SubstanceUnitID)
-		libSBML::Species_setInitialConcentration(sp, Compound$InitialValue[i])
+		iv <- as.double(Compound$InitialValue[i])
+		if (any(is.na(iv))){
+			iv[is.na(iv)] <- 0.0
+			message("some initial values were set to 0 because they were not numbers.")
+		}
+		libSBML::Species_setInitialConcentration(sp, iv)
 		libSBML::Species_setHasOnlySubstanceUnits(sp, FALSE)
 		Ai <- Compound$Assignment[i]
 		if (Compound$IsConstant[i]){
@@ -124,36 +129,36 @@
 		libSBML::KineticLaw_setMath(kl, astMath);
 
 		A <- ftsplit(AB[[i]][1],"+")
-		l <- grepl("^\\s*(NULL|NIL|Ø)\\s*$",A)
-		A <- A[!l]
+		l <- nzchar(A) & !grepl("^(NULL|NIL|Ø)$",A)
+		A <- A[l]
 		B <- ftsplit(AB[[i]][2],"+")
-		l <- grepl("^\\s*(NULL|NIL|Ø)\\s*$",B)
-		B <- B[!l]
+		l <- nzchar(B) & !grepl("^(NULL|NIL|Ø)$",B)
+		B <- B[l]
 
-		message("Reactants: ")
+		message("[SBML] Reactants: ")
 		print(A)
-		message("Products: ")
+		message("[SBML] Products: ")
 		print(B)
 		message("---")
 		for (a in A){
-			r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=a)
+			r <- regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=a)
 			m <- unlist(regmatches(a,r))
 			print(m)
 			RefName <- m[3]
 			spr  <-  libSBML::Reaction_createReactant(reaction)
 			libSBML::SimpleSpeciesReference_setSpecies(spr, RefName)
-			if (nchar(m[2])>0){
+			if (nzchar(m[2])){
 				libSBML::SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
 			}
 		}
 		for (b in B){
-			r<-regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=b)
+			r <- regexec(pattern="([0-9]*)\\s*[*]?\\s*(\\w+)",text=b)
 			m <- unlist(regmatches(b,r))
 			print(m)
 			RefName <- m[3]
 			spr  <-  libSBML::Reaction_createProduct(reaction)
 			libSBML::SimpleSpeciesReference_setSpecies(spr, RefName)
-			if (nchar(m[2])>0){
+			if (nzchar(m[2])){
 				libSBML::SpeciesReference_setStoichiometry(spr,as.numeric(m[2]))
 			}
 		}

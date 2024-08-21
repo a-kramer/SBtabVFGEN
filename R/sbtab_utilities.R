@@ -93,11 +93,11 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' med  2.5   close to default
 #' high 5.5   b > 2×default
 #'
-#' > update_from_table(v,data)
+#' > update_from_table(v,data,prefix="")
 #'   low med high
-#' a   1   1   1
-#' b   2   2   2
-#' c   3   3   3
+#' a 1.0 1.0  1.0
+#' b 0.5 2.5  5.5
+#' c 3.0 3.0  3.0
 update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
 	if (is.null(v) || is.null(Table)) return(NULL)
 	N <- names(v) %s% v.strip
@@ -170,7 +170,6 @@ sbtab.header.value <- function(sbtab.header,key='Document'){
 #'
 #' The SBtab content is not interpreted in any way.
 #' @param ods.file a string (file's name)
-#' @param verbose if FALSE, nothing is printed on screen (with cat)
 #' @return SBtab a list of tables (data.frames), one per ods sheet
 #'     SBtab[['TableName']] retrives a data.frame comment(SBtab) is
 #'     the name of the document
@@ -180,22 +179,10 @@ sbtab.header.value <- function(sbtab.header,key='Document'){
 #' model.sbtab<-sbtab_from_ods('model.ods')
 #' @export
 sbtab_from_ods <- function(ods.file,verbose=TRUE){
-	M <- readODS::read.ods(ods.file)
-	lM <- length(M)
-	SBtab <- list(length=lM)
-	header <- paste0(M[[1]][1,],collapse='')
-	document.name <- sbtab.header.value(header,'Document')
-	table.name <- vector(length=lM)
-	for (i in 1:lM){
-		header <- paste0(M[[i]][1,],collapse='')
-		table.name[i] <- sbtab.header.value(header,'TableName')
-		SBtab[[i]] <- M[[i]][-c(1,2),-1]
-		names(SBtab[[i]]) <- M[[i]][2,]
-		row.names(SBtab[[i]]) <- as.character(M[[i]][-c(1,2),1])
-	}
+	table.name <- readODS::list_ods_sheets(ods.file)
+	SBtab <- lapply(seq_along(table.name),readODS::read_ods,skip=1,row_names=TRUE,path=ods.file,as_tibble=FALSE)
 	names(SBtab) <- table.name
-	if (verbose) cat("Tables found: ",paste(table.name,collapse=', '),"\n")
-	comment(SBtab) <- document.name
+	comment(SBtab) <- sub("[.]ods$","",basename(ods.file))
 	return(SBtab)
 }
 
@@ -435,6 +422,58 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 	return(experiment)
 }
 
+infer_tf <- function(ename,tab){
+	if (nzchar(ename) && ename %in% names(tab)){
+	n.sv <- nrow(tab$Compound)
+	n.par <- nrow(tab$Parameter) + ni
+	n.t <- nrow(tab[[ename]])
+	tf <- list(
+		state=list(
+			A=array(1.0,dim=c(n.sv,1,n.t)),
+			b=array(0.0,dim=c(n.sv,1,n.t))
+		),
+		param=list(
+			A=array(1.0,dim=c(n.par,1,n.t)),
+			b=array(0.0,dim=c(n.par,1,n.t))
+		)
+	)
+	rownames(tf$state$b) <- row.names(tab$Compound)
+	rownames(tf$state$A) <- row.names(tab$Compound)
+	par.names <- c(row.names(tab$Parameter),row.names(tab$Input))
+	rownames(tf$param$b) <- par.names
+	rownames(tf$param$A) <- par.names
+
+	colNames <- names(tab[[ename]])
+	n <- nrow(tab[[ename]])
+
+	event.time <- as.double(tab[[ename]][["!Time"]])
+
+	for (i in grep("^>[A-Z]{3}:.+$",colNames)){
+		m <- colNames[i] %~% ">([A-Za-z]{3}):(.+)$"
+		op <- tolower(m[[1]][2])
+		quantity <- m[[1]][3]
+		kind <- ifelse(quantity %in% row.names(tab$Compound),"state","param")
+		if (op == "add") {
+			tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else if (op == "sub") {
+			tf[[kind]]$b[quantity,1,] <- (-1.0)*as.numeric(tab[[ename]][[i]])
+		} else if (op == "mul") {
+			tf[[kind]]$A[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else if (op == "div") {
+			tf[[kind]]$A[quantity,1,] <- 1.0/as.numeric(tab[[ename]][[i]])
+		} else if (op == "set") {
+			tf[[kind]]$A[quantity,1,] <- 0.0
+			tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else {
+			stop(sprintf("unknown operation in event table %s: %s\n",ename,op))
+		}
+	}
+		return(tf)
+	} else {
+		return(NULL)
+	}
+}
+
 sbtab.events <- function(ename,tab){
 	if (all(is.na(ename))) {
 		return(NULL)
@@ -444,56 +483,22 @@ sbtab.events <- function(ename,tab){
 	} else {
 		ni <- 0
 	}
-	if (nzchar(ename) && ename %in% names(tab)){
-		n.sv <- nrow(tab$Compound)
-		n.par <- nrow(tab$Parameter) + ni
-		n.t <- nrow(tab[[ename]])
-
-		tf <- list(
-			state=list(
-				A=array(1.0,dim=c(n.sv,1,n.t)),
-				b=array(0.0,dim=c(n.sv,1,n.t))
-			),
-			param=list(
-				A=array(1.0,dim=c(n.par,1,n.t)),
-				b=array(0.0,dim=c(n.par,1,n.t))
-			)
-		)
-		rownames(tf$state$b) <- row.names(tab$Compound)
-		rownames(tf$state$A) <- row.names(tab$Compound)
-		par.names <- c(row.names(tab$Parameter),row.names(tab$Input))
-		rownames(tf$param$b) <- par.names
-		rownames(tf$param$A) <- par.names
-
-		colNames <- names(tab[[ename]])
-		n <- nrow(tab[[ename]])
-
-		event.time <- as.double(tab[[ename]][["!Time"]])
-
-		for (i in grep("^>[A-Z]{3}:.+$",colNames)){
-			m <- colNames[i] %~% ">([A-Za-z]{3}):(.+)$"
-			op <- tolower(m[[1]][2])
-			quantity <- m[[1]][3]
-			kind <- ifelse(quantity %in% row.names(tab$Compound),"state","param")
-			if (op == "add") {
-				tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else if (op == "sub") {
-				tf[[kind]]$b[quantity,1,] <- (-1.0)*as.numeric(tab[[ename]][[i]])
-			} else if (op == "mul") {
-				tf[[kind]]$A[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else if (op == "div") {
-				tf[[kind]]$A[quantity,1,] <- 1.0/as.numeric(tab[[ename]][[i]])
-			} else if (op == "set") {
-				tf[[kind]]$A[quantity,1,] <- 0.0
-				tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else {
-				stop(sprintf("unknown operation in event table %s: %s\n",ename,op))
-			}
-		}
-	} else {
-		return(NULL)
+	event.time <- as.double(tab[[ename]][["!Time"]])
+	if ("Dose" %in% names(tab[[ename]])){
+		event.dose <- as.double(tab[[ename]][["!Dose"]])
 	}
-	return(list(time=event.time,tf=tf))
+	if ("!Transformation" %in% names(tab[[ename]]) && "Transformation" %in% names(tab)){
+		tf <- tab$Transformation
+		tf_sequence <- tab[[ename]][["!Transformation"]]
+		tf_index <- match(tf_sequence,rownames(tf))
+		Events <- list(time=event.time,tf=event_index-1)
+		comment(Events) <- "scheduled custom transformation function events"
+  } else {
+		tf <- infer_tf(ename,tab)
+		Events <- list(time=event.time,tf=tf)
+		comment(Events) <- "scheduled linear transformation events"
+	}
+	return(Events)
 }
 
 ## replaceConserved <- function(tab,conLaws){
