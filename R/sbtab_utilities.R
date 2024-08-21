@@ -93,11 +93,11 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' med  2.5   close to default
 #' high 5.5   b > 2×default
 #'
-#' > update_from_table(v,data)
+#' > update_from_table(v,data,prefix="")
 #'   low med high
-#' a   1   1   1
-#' b   2   2   2
-#' c   3   3   3
+#' a 1.0 1.0  1.0
+#' b 0.5 2.5  5.5
+#' c 3.0 3.0  3.0
 update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
 	if (is.null(v) || is.null(Table)) return(NULL)
 	N <- names(v) %s% v.strip
@@ -170,7 +170,6 @@ sbtab.header.value <- function(sbtab.header,key='Document'){
 #'
 #' The SBtab content is not interpreted in any way.
 #' @param ods.file a string (file's name)
-#' @param verbose if FALSE, nothing is printed on screen (with cat)
 #' @return SBtab a list of tables (data.frames), one per ods sheet
 #'     SBtab[['TableName']] retrives a data.frame comment(SBtab) is
 #'     the name of the document
@@ -180,22 +179,10 @@ sbtab.header.value <- function(sbtab.header,key='Document'){
 #' model.sbtab<-sbtab_from_ods('model.ods')
 #' @export
 sbtab_from_ods <- function(ods.file,verbose=TRUE){
-	M <- readODS::read.ods(ods.file)
-	lM <- length(M)
-	SBtab <- list(length=lM)
-	header <- paste0(M[[1]][1,],collapse='')
-	document.name <- sbtab.header.value(header,'Document')
-	table.name <- vector(length=lM)
-	for (i in 1:lM){
-		header <- paste0(M[[i]][1,],collapse='')
-		table.name[i] <- sbtab.header.value(header,'TableName')
-		SBtab[[i]] <- M[[i]][-c(1,2),-1]
-		names(SBtab[[i]]) <- M[[i]][2,]
-		row.names(SBtab[[i]]) <- as.character(M[[i]][-c(1,2),1])
-	}
+	table.name <- readODS::list_ods_sheets(ods.file)
+	SBtab <- lapply(seq_along(table.name),readODS::read_ods,skip=1,row_names=TRUE,path=ods.file,as_tibble=FALSE)
 	names(SBtab) <- table.name
-	if (verbose) cat("Tables found: ",paste(table.name,collapse=', '),"\n")
-	comment(SBtab) <- document.name
+	comment(SBtab) <- sub("[.]ods$","",basename(ods.file))
 	return(SBtab)
 }
 

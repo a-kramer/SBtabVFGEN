@@ -144,7 +144,7 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 		Constant <- data.frame(Value,Unit,row.names=row.names(SBtab$Constant))
 		return(Constant)
 	} else {
-		message("There is no «Constant» Table in this model.")
+		message("There is no «Constant» Table in this model. This is OK.")
 		return(NULL)
 	}
 }
@@ -171,7 +171,7 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 	print(Name)
 	## replace possible non-ascii "-"
 	CleanIV <- gsub("−","-", SBtab[["Compound"]][["!InitialValue"]])
-	InitialValue <- as.numeric(CleanIV);
+	InitialValue <- CleanIV;
 	SteadyState <- .OptionalColumn(SBtab[["Compound"]],"!SteadyState","logical")
 	Unit <- SBtab[["Compound"]][["!Unit"]]
 	message("Units: ")
@@ -191,7 +191,7 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 		Expression <- data.frame(Formula,Unit,row.names=row.names(SBtab$Expression))
 		return(Expression)
 	} else {
-		message("There is no «Expression» Table in this model.")
+		message("There is no «Expression» Table in this model. This is OK.")
 		return(NULL)
 	}
 }
@@ -263,6 +263,30 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 	}
 }
 
+.GetTransformations <- function(SBtab,conLaws=NULL){
+	if ("Transformation" %in% names(SBtab)){
+		varNames <- rownames(SBtab$Compound)
+		parNames <- c(rownames(SBtab$Parameter),rownames(SBtab$Input))
+		if (!is.null(conLaws) && !any(is.na(conLaws))){
+			k <- conLaws$Eliminates
+			varNames <- varNames[-k]
+		}
+		# initialize with trivial transformations:
+		stf <- varNames
+		names(stf) <- varNames
+		ptf <- parNames
+		names(ptf) <- parNames
+		# update from Table of Transformations:
+		stf <- update_from_table(stf,SBtab$Transformation)
+		ptf <- update_from_table(ptf,SBtab$Transformation)
+		tf <- list(state=stf,param=ptf)
+		print(tf)
+		return(tf)
+	} else {
+		return(NULL)
+	}
+}
+
 .GetDefaults <- function(SBtab){
 	if ("Defaults" %in% names(SBtab)){
 		Name <- rownames(SBtab$Defaults)
@@ -303,11 +327,12 @@ UpdateODEandStoichiometry <- function(Term,Compound,FluxName,Expression,Input){
 		} else if (compound %in% row.names(Input)){
 			j <- (-1)
 			cat(sprintf("\t\t\t«%s» is an input parameter (a parameter that represents a constant concentration of a substance outside of the model's scope), it has no influx. ODE will be unaffected, but the expression may be used in ReactionFlux calculations\n",compound))
-		} else if (compound %in% c("null","NULL","NIL","NONE","NA","0","∅","Ø","[]","{}")) {
+		} else if (nzchar(compound) && compound %in% c("null","NULL","NIL","NONE","NA","0","∅","Ø","[]","{}")) {
 			cat(sprintf("\t\t\t«%s» (Ø) is a placeholder to formulate degradation in reaction formulae.\n",compound))
 			j <- (-2)
 		} else {
-			stop(sprintf("\t\t\t«%s» is neither in the list of registered compounds nor is it an expression.\n",compound))
+			message(sprintf("\t\t\tNo known compound specified, this is interpreted as empty (degradation).\n"))
+			j <- (-2)
 		}
 		J[i] <- j
 		C[i] <- n
@@ -461,7 +486,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	return(vfgen)
 }
 
-.write.txt <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL){
+.write.txt <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL,tf=NULL){
 	files<-c("StateVariables.txt","Parameters.txt","ODE.txt")
 	if (!is.null(Constant)) {
 		write.table(Constant$Value,row.names=row.names(Constant),col.names=FALSE,sep='\t',file="Constants.txt",quote=FALSE)
@@ -501,6 +526,23 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	}
 	ODE<-data.frame(rhs=ODE,row.names=row.names(Compound))
 	write.table(ODE[i,],row.names=FALSE,col.names=FALSE,sep='\t',file="ODE.txt",quote=FALSE)
+	if (!is.null(tf)){
+		effect_label <- c('var','par')
+		for (j in seq_along(names(tf))){
+			for (i in seq(NCOL(tf[[j]]))){
+				f <- tf[[j]][,i]
+				trivial <- (names(f) == f) # this means that no transformation occurs
+				F <- f[!trivial]           # only non-trivial transformations are written
+				tag <- character(length(F))
+				tag[] <- effect_label[j]
+				event_label <- character(length(F))
+				event_label[] <- colnames(tf[[j]])[i]
+				EVT <- data.frame(event=event_label,affects=tag,Formula=F)
+				write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=TRUE)
+			}
+		}
+		files<-c(files,"Transformations.txt")
+	}
 	tar(paste0(H,".tar.gz"),files=files,compression="gzip")
 	zip(paste0(H,".zip"),files=files)
 }
@@ -643,7 +685,8 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	##
 	PrintSteadyStateOutputs(Compound,ODE,Reaction,document.name)
 	H <- make.cnames(document.name)
-	.write.txt(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw)
+	tf <- .GetTransformations(SBtab,ConLaw)
+	.write.txt(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf)
 	vfgen <- .make.vfgen(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw)
 	fname<-sprintf("%s.vf",H)
 	cat(unlist(vfgen),sep="\n",file=fname)
