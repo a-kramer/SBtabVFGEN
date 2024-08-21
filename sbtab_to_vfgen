@@ -32,7 +32,7 @@ if ((n<-length(model.ods)) > 0){
 
 if ((n<-length(model.xlsx)) > 0){
 	for (i in seq(n)){
-		model.sbtab<-sbtab_from_ods(model.xlsx[i])
+		model.sbtab<-sbtab_from_excel(model.xlsx[i])
 		sbtab_to_vfgen(model.sbtab,cla=conLawAnalysis)
 	}
 }

@@ -435,6 +435,58 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 	return(experiment)
 }
 
+infer_tf <- function(ename,tab){
+	if (nzchar(ename) && ename %in% names(tab)){
+	n.sv <- nrow(tab$Compound)
+	n.par <- nrow(tab$Parameter) + ni
+	n.t <- nrow(tab[[ename]])
+	tf <- list(
+		state=list(
+			A=array(1.0,dim=c(n.sv,1,n.t)),
+			b=array(0.0,dim=c(n.sv,1,n.t))
+		),
+		param=list(
+			A=array(1.0,dim=c(n.par,1,n.t)),
+			b=array(0.0,dim=c(n.par,1,n.t))
+		)
+	)
+	rownames(tf$state$b) <- row.names(tab$Compound)
+	rownames(tf$state$A) <- row.names(tab$Compound)
+	par.names <- c(row.names(tab$Parameter),row.names(tab$Input))
+	rownames(tf$param$b) <- par.names
+	rownames(tf$param$A) <- par.names
+
+	colNames <- names(tab[[ename]])
+	n <- nrow(tab[[ename]])
+
+	event.time <- as.double(tab[[ename]][["!Time"]])
+
+	for (i in grep("^>[A-Z]{3}:.+$",colNames)){
+		m <- colNames[i] %~% ">([A-Za-z]{3}):(.+)$"
+		op <- tolower(m[[1]][2])
+		quantity <- m[[1]][3]
+		kind <- ifelse(quantity %in% row.names(tab$Compound),"state","param")
+		if (op == "add") {
+			tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else if (op == "sub") {
+			tf[[kind]]$b[quantity,1,] <- (-1.0)*as.numeric(tab[[ename]][[i]])
+		} else if (op == "mul") {
+			tf[[kind]]$A[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else if (op == "div") {
+			tf[[kind]]$A[quantity,1,] <- 1.0/as.numeric(tab[[ename]][[i]])
+		} else if (op == "set") {
+			tf[[kind]]$A[quantity,1,] <- 0.0
+			tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
+		} else {
+			stop(sprintf("unknown operation in event table %s: %s\n",ename,op))
+		}
+	}
+		return(tf)
+	} else {
+		return(NULL)
+	}
+}
+
 sbtab.events <- function(ename,tab){
 	if (all(is.na(ename))) {
 		return(NULL)
@@ -444,56 +496,22 @@ sbtab.events <- function(ename,tab){
 	} else {
 		ni <- 0
 	}
-	if (nzchar(ename) && ename %in% names(tab)){
-		n.sv <- nrow(tab$Compound)
-		n.par <- nrow(tab$Parameter) + ni
-		n.t <- nrow(tab[[ename]])
-
-		tf <- list(
-			state=list(
-				A=array(1.0,dim=c(n.sv,1,n.t)),
-				b=array(0.0,dim=c(n.sv,1,n.t))
-			),
-			param=list(
-				A=array(1.0,dim=c(n.par,1,n.t)),
-				b=array(0.0,dim=c(n.par,1,n.t))
-			)
-		)
-		rownames(tf$state$b) <- row.names(tab$Compound)
-		rownames(tf$state$A) <- row.names(tab$Compound)
-		par.names <- c(row.names(tab$Parameter),row.names(tab$Input))
-		rownames(tf$param$b) <- par.names
-		rownames(tf$param$A) <- par.names
-
-		colNames <- names(tab[[ename]])
-		n <- nrow(tab[[ename]])
-
-		event.time <- as.double(tab[[ename]][["!Time"]])
-
-		for (i in grep("^>[A-Z]{3}:.+$",colNames)){
-			m <- colNames[i] %~% ">([A-Za-z]{3}):(.+)$"
-			op <- tolower(m[[1]][2])
-			quantity <- m[[1]][3]
-			kind <- ifelse(quantity %in% row.names(tab$Compound),"state","param")
-			if (op == "add") {
-				tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else if (op == "sub") {
-				tf[[kind]]$b[quantity,1,] <- (-1.0)*as.numeric(tab[[ename]][[i]])
-			} else if (op == "mul") {
-				tf[[kind]]$A[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else if (op == "div") {
-				tf[[kind]]$A[quantity,1,] <- 1.0/as.numeric(tab[[ename]][[i]])
-			} else if (op == "set") {
-				tf[[kind]]$A[quantity,1,] <- 0.0
-				tf[[kind]]$b[quantity,1,] <- as.numeric(tab[[ename]][[i]])
-			} else {
-				stop(sprintf("unknown operation in event table %s: %s\n",ename,op))
-			}
-		}
-	} else {
-		return(NULL)
+	event.time <- as.double(tab[[ename]][["!Time"]])
+	if ("Dose" %in% names(tab[[ename]])){
+		event.dose <- as.double(tab[[ename]][["!Dose"]])
 	}
-	return(list(time=event.time,tf=tf))
+	if ("!Transformation" %in% names(tab[[ename]]) && "Transformation" %in% names(tab)){
+		tf <- tab$Transformation
+		tf_sequence <- tab[[ename]][["!Transformation"]]
+		tf_index <- match(tf_sequence,rownames(tf))
+		Events <- list(time=event.time,tf=event_index-1)
+		comment(Events) <- "scheduled custom transformation function events"
+  } else {
+		tf <- infer_tf(ename,tab)
+		Events <- list(time=event.time,tf=tf)
+		comment(Events) <- "scheduled linear transformation events"
+	}
+	return(Events)
 }
 
 ## replaceConserved <- function(tab,conLaws){
