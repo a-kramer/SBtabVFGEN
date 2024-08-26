@@ -538,7 +538,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 				tag[] <- effect_label[j]
 				event_label <- character(length(F))
 				event_label[] <- colnames(tf[[j]])[i]
-				EVT <- data.frame(event=event_label,affects=tag,name=names(F),Formula=F)
+				EVT <- data.frame(event=event_label,affects=tag,var=names(F),Formula=F)
 				write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=a)
 				a <- TRUE
 			}
