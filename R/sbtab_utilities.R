@@ -490,8 +490,9 @@ sbtab.events <- function(ename,tab){
 	if ("!Transformation" %in% names(tab[[ename]]) && "Transformation" %in% names(tab)){
 		tf <- tab$Transformation
 		tf_sequence <- tab[[ename]][["!Transformation"]]
+		tf_dose <- as.double(tab[[ename]][["!Dose"]])
 		tf_index <- match(tf_sequence,rownames(tf))
-		Events <- list(time=event.time,tf=event_index-1)
+		Events <- list(time=event.time,label=tf_index-1,dose=tf_dose)
 		comment(Events) <- "scheduled custom transformation function events"
   } else {
 		tf <- infer_tf(ename,tab)
