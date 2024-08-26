@@ -136,19 +136,19 @@ unit.id <- function(unit.str,prnt=FALSE){
 #' A not-simple unit is: m/s, kg*m/s^2, kg*h
 #' @param u a unit with no fractions or products
 #' @return a data.frame with the unit's properties
-simple.unit <- function(u){
-	prefix.pattern <- "(G|giga|M|mega|k|kilo|h|hecto|c|centi|m|milli|u|\xCE\xBC|\xc2\xb5|micro|n|nano|p|pico|f|femto)?"
-	unit.name.pattern <- "(l|L|liter|litre|g|gram|mole?|h|hour|s|second|m|meter|metre|K|kelvin|cd|candela|A|ampere|M|molarity|N|[Nn]ewton)"
-	exponent.pattern <- "\\^?([-+]?[0-9]+)?"
-	pat <- paste0("^",prefix.pattern,unit.name.pattern,exponent.pattern,"$")
+simple.unit <- function(u=NULL){
 	## defaults
 	u.m <- 1
 	u.x <- 1
 	u.s <- 0
 	u.k <- "dimensionless"
 	## an empty unit means that the value is dimensionless (the unit is '1')
-	if (u == "") return(data.frame(scale=u.s,multiplier=u.m,exponent=u.x,kind=u.k))
+	if (!nzchar(u)) return(data.frame(scale=u.s,multiplier=u.m,exponent=u.x,kind=u.k))
 	## um, actually, kg is an SI unit "kind", but doesn't take other prefixes
+	prefix.pattern <- "(G|giga|M|mega|k|kilo|h|hecto|c|centi|m|milli|u|\xCE\xBC|\xc2\xb5|micro|n|nano|p|pico|f|femto)?"
+	unit.name.pattern <- "(l|L|liter|litre|g|gram|mole?|h|hour|s|second|m|meter|metre|K|kelvin|cd|candela|A|ampere|M|molarity|N|[Nn]ewton)"
+	exponent.pattern <- "\\^?([-+]?[0-9]+)?"
+	pat <- paste0("^",prefix.pattern,unit.name.pattern,exponent.pattern,"$")
 	if (grepl("^kg|kilogram$",u)){
 		u.k <- "kilogram"
 		u.s <- 0
