@@ -528,6 +528,7 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	write.table(ODE[i,],row.names=FALSE,col.names=FALSE,sep='\t',file="ODE.txt",quote=FALSE)
 	if (!is.null(tf)){
 		effect_label <- c('var','par')
+		a <- FALSE
 		for (j in seq_along(names(tf))){
 			for (i in seq(NCOL(tf[[j]]))){
 				f <- tf[[j]][,i]
@@ -537,8 +538,9 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 				tag[] <- effect_label[j]
 				event_label <- character(length(F))
 				event_label[] <- colnames(tf[[j]])[i]
-				EVT <- data.frame(event=event_label,affects=tag,Formula=F)
-				write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=TRUE)
+				EVT <- data.frame(event=event_label,affects=tag,name=names(F),Formula=F)
+				write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=a)
+				a <- TRUE
 			}
 		}
 		files<-c(files,"Transformations.txt")
