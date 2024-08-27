@@ -394,30 +394,22 @@ sbtab.valid <- function(tab){
 #' @param initialTime t0 for the time series experiment: y(t0) = y0
 #' @param initialState (vector) initial values of the state variables, at t0
 #' @return list with these quantities as list items
-time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2]),errorValues=0.05*outputValues+0.05*max(outputValues),inputParameters=c(),initialTime=as.double(min(outputTimes)),initialState,events=NA){
+time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2]),errorValues=0.05*outputValues+0.05*max(outputValues),inputParameters=NULL,initialTime=as.double(min(outputTimes)),initialState,events=NA){
 	outNames <- names(outputValues)
 	names(outputValues) <- outNames %s% ">"
-	if (is.null(inputParameters) || all(is.na(inputParameters)))
-		inputParameters <- c()
-	if (is.null(events) || all(is.na(events))){
-		experiment <- list(
-			outputValues=outputValues,
+	experiment <- list(outputValues=outputValues,
 			errorValues=errorValues,
-			input=inputParameters,
 			initialTime=as.double(initialTime),
-			initialState=initialState,
-			outputTimes=outputTimes
-		)
-	} else {
-		experiment <- list(
-			outputValues=outputValues,
-			errorValues=errorValues,
-			input=inputParameters,
-			initialTime=as.double(initialTime),
-			initialState=initialState,
-			outputTimes=as.double(outputTimes),
-			events=events
-		)
+
+			outputTimes=outputTimes)
+	if (all(is.finite(initialState))) {
+		experiments <- c(experiments,initialState)
+	}
+	if (!is.null(inputParameters) && !any(is.na(inputParameters))){
+		experiments <- c(experiments,inputParameters)
+	}
+	if (!is.null(events) & !any(is.na(events))){
+		experiment <- c(experiments,events)
 	}
 	return(experiment)
 }
