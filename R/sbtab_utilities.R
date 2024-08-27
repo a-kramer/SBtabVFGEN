@@ -400,16 +400,15 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 	experiment <- list(outputValues=outputValues,
 			errorValues=errorValues,
 			initialTime=as.double(initialTime),
-
 			outputTimes=outputTimes)
 	if (all(is.finite(initialState))) {
-		experiments <- c(experiments,initialState)
+		experiment <- c(experiment,list(initialState=initialState))
 	}
 	if (!is.null(inputParameters) && !any(is.na(inputParameters))){
-		experiments <- c(experiments,inputParameters)
+		experiment <- c(experiment,list(inputParameters=inputParameters))
 	}
 	if (!is.null(events) & !any(is.na(events))){
-		experiment <- c(experiments,events)
+		experiment <- c(experiment,list(events=events))
 	}
 	return(experiment)
 }
