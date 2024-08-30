@@ -99,7 +99,7 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' b 0.5 2.5  5.5
 #' c 3.0 3.0  3.0
 update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
-	if (is.null(v) || is.null(Table)) return(NULL)
+	if (is.null(v) || any(is.na(v)) || is.null(Table)) return(NULL)
 	N <- names(v) %s% v.strip
 	stopifnot(is.data.frame(Table))
 	n <- nrow(Table)
@@ -134,7 +134,12 @@ sbtab_quantity <- function(Table){
 	colNames <- names(Table)
 	l <- grepl("^!((Default|Initial)?Value|Mean|Median)$",colNames)
 	if (any(l)){
-		v <- as.double(Table %1% l)
+		C <- Table %1% l
+		if (all(grepl("^[-+[:digit:].]+[eE]?[-+[:digit:]]+$",C))){
+			v <- as.double(C)
+		} else {
+			v <- NA
+		}
 		names(v) <- rownames(Table)
 	} else {
 		stop("Table has no Value column.")
