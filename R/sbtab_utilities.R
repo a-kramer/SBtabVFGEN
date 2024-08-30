@@ -99,7 +99,7 @@ ftsplit <- function(str,s=" ",re=FALSE){
 #' b 0.5 2.5  5.5
 #' c 3.0 3.0  3.0
 update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
-	if (is.null(v) || any(is.na(v)) || is.null(Table)) return(NULL)
+	if (is.null(v) || is.null(Table)) return(NULL)
 	N <- names(v) %s% v.strip
 	stopifnot(is.data.frame(Table))
 	n <- nrow(Table)
@@ -135,10 +135,10 @@ sbtab_quantity <- function(Table){
 	l <- grepl("^!((Default|Initial)?Value|Mean|Median)$",colNames)
 	if (any(l)){
 		C <- Table %1% l
-		if (all(grepl("^[-+[:digit:].]+[eE]?[-+[:digit:]]+$",C))){
+		if (all(grepl("^[-+[:digit:].]+[eE]?[-+[:digit:]]*$",C))){
 			v <- as.double(C)
 		} else {
-			v <- NA
+			v <- rep(NA,NROW(Table))
 		}
 		names(v) <- rownames(Table)
 	} else {
@@ -410,7 +410,7 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 		experiment <- c(experiment,list(initialState=initialState))
 	}
 	if (!is.null(inputParameters) && !any(is.na(inputParameters))){
-		experiment <- c(experiment,list(inputParameters=inputParameters))
+		experiment <- c(experiment,list(input=inputParameters))
 	}
 	if (!is.null(events) & !any(is.na(events))){
 		experiment <- c(experiment,list(events=events))
