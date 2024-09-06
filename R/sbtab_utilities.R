@@ -134,7 +134,12 @@ sbtab_quantity <- function(Table){
 	colNames <- names(Table)
 	l <- grepl("^!((Default|Initial)?Value|Mean|Median)$",colNames)
 	if (any(l)){
-		v <- as.double(Table %1% l)
+		C <- Table %1% l
+		if (all(grepl("^[-+[:digit:].]+[eE]?[-+[:digit:]]*$",C))){
+			v <- as.double(C)
+		} else {
+			v <- rep(NA,NROW(Table))
+		}
 		names(v) <- rownames(Table)
 	} else {
 		stop("Table has no Value column.")
@@ -405,7 +410,7 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 		experiment <- c(experiment,list(initialState=initialState))
 	}
 	if (!is.null(inputParameters) && !any(is.na(inputParameters))){
-		experiment <- c(experiment,list(inputParameters=inputParameters))
+		experiment <- c(experiment,list(input=inputParameters))
 	}
 	if (!is.null(events) & !any(is.na(events))){
 		experiment <- c(experiment,list(events=events))
