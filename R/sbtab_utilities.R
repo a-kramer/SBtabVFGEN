@@ -113,8 +113,8 @@ update_from_table <- function(v,Table, prefix=">", v.strip="_ConservedConst$"){
 	if (any(l)){
 		NT <- N[l]
 		M[NT,] <- t(T[NT])
-		colnames(M)<-rownames(Table)
 	}
+	colnames(M)<-rownames(Table)
 	return(M)
 }
 

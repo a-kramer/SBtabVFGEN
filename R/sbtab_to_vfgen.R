@@ -433,7 +433,26 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	message(sprintf("If you'd like to monitor omitted compounds, add this to the Output table: %s\n",outfname))
 }
 
-.make.vfgen <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw){
+#' paste_tag makes an XML tag from a data-frame
+#'
+#' given a data.frame, this function returns one string per row, using
+#' the data.frame column names as attribute names of an XML tag.
+#'
+#' @examples
+#' x <- data.frame(Name="a",Type="b",Formula="c")
+#' tag <- paste_tag("Example",x)
+#' message(tag) #  <Example Name="a" Type="b" Formula="c"/>
+#' @param Name the nameof the printed tag (" <Name [...]>")
+#' @param Attributes the data.frame containing the tag attributes to print (as strings)
+#' @param indent the printed string will be prefixed with this
+#' @return a character vector, one tag per row of Attributes argument
+paste_tag <- function(Name, Attributes, indent=" "){
+	A<-apply(Attributes,1,function(r) paste0(names(Attributes),"=",paste0('"',r,'"'),collapse=" "))
+	tag <- sprintf("%s<%s %s/>",indent,Name,A)
+	return(tag)
+}
+
+.make.vfgen <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf=NULL){
 	vfgen <- list()
 	fmt <- list(const=" <Constant Name=\"%s\" Description=\"constant\" Value=\"%s\"/>",
 			    par=" <Parameter Name=\"%s\" Description=\"independent parameter\" DefaultValue=\"%g\"/>",
@@ -466,10 +485,8 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 		nLaws <- length(F)
 		vfgen[["ConservationLaw"]] <- sprintf(fmt$ConservationLaw,CName,c(1:nLaws),F)
 	}
-			                            # Expressions and Reaction Fluxes
 	vfgen[["expression"]] <- sprintf(fmt$expression,row.names(Expression),Expression$Formula)
 	vfgen[["flux"]] <- sprintf(fmt$flux,row.names(Reaction),Reaction$Flux)
-			                            # ODE right-hand-sides
 	nC <- dim.data.frame(Compound)
 	CName <- row.names(Compound)
 	for (i in 1:nC[1]){
@@ -483,6 +500,19 @@ PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	## Output Functions
 	vfgen[["function"]] <- sprintf(fmt$output,row.names(Output),Output$Formula)
 	vfgen[["endmodel"]] <- "</VectorField>"
+  if (!is.null(tf)) {
+		vfgen[["tfComment"]] <- "<!-- VFGEN doesn't have a Transformation mechanism, the following matter will not be parsed by the vfgen tool -->"
+		N <- NCOL(tf[[1]])
+		tfName <- colnames(tf[[1]])
+		TF <- as.data.frame(rbind(cbind(tf$param,Type='par'),cbind(tf$state,Type='var')))
+		TF_TEXT <- list()
+		for (j in seq(N)){
+			trivial <- rownames(TF) == TF[[j]]
+			A <- data.frame(Name=rownames(TF)[!trivial],Type=TF$Type[!trivial],Formula=TF[[j]][!trivial])
+			TF_TEXT[[j]] <- c(sprintf(" <Transformation Name=\"%s\">",tfName[j]),paste_tag("Assign",A,indent='  ')," </Transformation>")
+		}
+		vfgen[["appendix"]] <- c("<Appendix>",TF_TEXT,"</Appendix>")
+	}
 	return(vfgen)
 }
 
@@ -689,7 +719,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	H <- make.cnames(document.name)
 	tf <- .GetTransformations(SBtab,ConLaw)
 	.write.txt(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf)
-	vfgen <- .make.vfgen(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw)
+	vfgen <- .make.vfgen(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf)
 	fname<-sprintf("%s.vf",H)
 	cat(unlist(vfgen),sep="\n",file=fname)
 	message(sprintf("The vf content was written to: %s\n",fname))
@@ -698,6 +728,6 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	fname<-sprintf("%s.mod",H)
 	cat(unlist(Mod),sep="\n",file=fname)
 	message(sprintf("The mod content was written to: %s\n",fname))
-	save(ConLaw,file="ConservationLaws.RData")
+	saveRDS(ConLaw,file="ConservationLaws.RDS")
 	return(ConLaw)
 }

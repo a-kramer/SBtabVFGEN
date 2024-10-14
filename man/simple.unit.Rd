@@ -4,7 +4,7 @@
 \alias{simple.unit}
 \title{Simple unit from string}
 \usage{
-simple.unit(u)
+simple.unit(u = NULL)
 }
 \arguments{
 \item{u}{a unit with no fractions or products}

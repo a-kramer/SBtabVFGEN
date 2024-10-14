@@ -8,8 +8,6 @@ sbtab_from_ods(ods.file, verbose = TRUE)
 }
 \arguments{
 \item{ods.file}{a string (file's name)}
-
-\item{verbose}{if FALSE, nothing is printed on screen (with cat)}
 }
 \value{
 SBtab a list of tables (data.frames), one per ods sheet

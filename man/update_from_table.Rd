@@ -56,9 +56,9 @@ low  0.5   b < 1
 med  2.5   close to default
 high 5.5   b > 2×default
 
-> update_from_table(v,data)
+> update_from_table(v,data,prefix="")
   low med high
-a   1   1   1
-b   2   2   2
-c   3   3   3
+a 1.0 1.0  1.0
+b 0.5 2.5  5.5
+c 3.0 3.0  3.0
 }
