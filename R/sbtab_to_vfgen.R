@@ -69,6 +69,8 @@ AppendAmounts <- function(S,Quantity,QuantityName,Separator){
 		##print(k)
 		##message(sprintf("Replacing compound %i («%s») by Conservation Law Expression.\n",k,CompoundName[k]))
 		a[k] <- FALSE # this compound may not be replaced in the future
+		print(l)
+		print(InitialValue)
 		Const <- as.numeric(l %*% InitialValue)
 		ConLaw$ConstantName[j] <- sprintf("%s_ConservedConst",CompoundName[k])
 		ConLaw$Text[j] <- paste(ConLaw$ConstantName[j],sub("1[*]","",LawText),sep=" = ")
@@ -86,7 +88,7 @@ AppendAmounts <- function(S,Quantity,QuantityName,Separator){
 		}
 		ConLaw$Formula[j] <- gsub("1[*]","",Formula)
 		message(LawText)
-		message(sprintf("This will comment out compound %i («%s», initial value: %g), Conserved Constant = %f\n",k,CompoundName[k],InitialValue[k],Const))
+		message(sprintf("This will comment out compound %i («%s», initial value: %s), Conserved Constant = %f\n",k,CompoundName[k],InitialValue[k],Const))
 	}
 	ConLaw <- as.data.frame(ConLaw,row.names=ConLaw$ConstantName)
 	return(ConLaw)
@@ -417,20 +419,6 @@ ParseReactionFormulae <- function(Compound,Reaction,Expression,Input){
 
 PrintConLawInfo <- function(ConLaw,CompoundName,document.name){
 	nLaws <- length(ConLaw$Text)
-	header<-character(length=2)
-	header[1] <- sprintf("!!SBtab\tDocument='%s' TableName='Suggested Input' TableTitle='The model has conservation laws that were automatically determined, these are the conserved constants' TableType='Quantity'",document.name)
-	header[2] <- sprintf("!ID\t!Name\t!DefaultValue\t!Unit\t!ConservationLaw\t!Comment")
-	SuggestedParameters <- c(header,sprintf("CLU%i\t%s\t%g\tnM\tTRUE\t%s",1:nLaws,ConLaw$ConstantName,ConLaw$Constant,ConLaw$Text))
-	infname <- paste0(document.name,"_SuggestedInput.tsv")
-	cat(SuggestedParameters,sep="\n",file=infname)
-
-	header[1] <- sprintf("!!SBtab\tDocument='%s' TableName='Suggested Output' TableTitle='Automatically determined conservation laws remove state variables, these outputs make them observable' TableType='Quantity'",document.name)
-	header[2] <- sprintf("!ID\t!Name\t!Comment\t!ErrorName\t!ErrorType\t!Unit\t!ProbDist\t!Formula")
-	k <- ConLaw[["Eliminates"]]
-	SuggestedOutput=c(header,sprintf("YCL%i\t%s_mon\tmonitors implicit state\tSD_YCL%i\tnot applicable\tnM\tnone\t%s",1:nLaws,CompoundName[k],1:nLaws,CompoundName[k]))
-	outfname <- paste0(document.name,"_SuggestedOutput.tsv")
-	cat(SuggestedOutput,sep="\n",file=outfname)
-	message(sprintf("If you'd like to monitor omitted compounds, add this to the Output table: %s\n",outfname))
 }
 
 #' paste_tag makes an XML tag from a data-frame
@@ -607,6 +595,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	cat("The names of SBtab[[1]]:\n")
 	cat(colnames(SBtab[[1]]),sep=", ")
 	cat("\n")
+	print(SBtab$Reaction)
 	Reaction <- .GetReactions(SBtab)
 	Constant <- .GetConstants(SBtab)
 	Expression <- .GetExpressions(SBtab)
@@ -678,6 +667,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	Reaction[["rhs"]] <- ModelStructure$rhs
 
 	if (cla){
+		ConLaw <- NULL
 		Laws <- .GetConservationLaws(ModelStructure$Stoichiometry)
 		if (!is.null(Laws)){
 			nLaws <- dim(Laws)[2]
@@ -687,7 +677,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 			message("---")
 			message(sprintf("Conservation Law dimensions:\t%i × %i\n",dim(Laws)[1],dim(Laws)[2]))
 			message(sprintf("To check that the conservation laws apply: norm(t(StoichiometryMatrix) * ConservationLaw == %6.5f)",norm(t(N) %*% Laws,type="F")))
-			ConLaw <- .GetLawText(Laws,row.names(Compound),Compound$InitialValue)
+			ConLaw <- .GetLawText(Laws,row.names(Compound),as.numeric(Compound$InitialValue))
 			attr(ConLaw,"lawMatrix") <- Laws
 			PrintConLawInfo(ConLaw,row.names(Compound),document.name)
 			if (require("hdf5r")){
@@ -700,15 +690,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 				f5[["/ConstantName"]]<-ConLaw$ConstantName
 				f5[["/EliminatedCompounds"]]<-(ConLaw$Eliminates-1); # this is intended for C
 				h5close(f5)
-			} else {
-				rownames(Laws)<-row.names(Compound)
-				write.table(t(Laws),file="ConservationLaws.tsv",sep="\t",col.names=FALSE,row.names=FALSE)
-				colnames(N)<-row.names(Reaction)
-				rownames(N)<-row.names(Compound)
-				write.table(N,file="Stoichiometry.tsv",sep="\t",col.names=FALSE,row.names=FALSE)
 			}
-		} else {
-			ConLaw <- NULL
 		}
 	} else {
 		Laws <- NULL

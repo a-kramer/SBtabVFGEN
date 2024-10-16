@@ -42,7 +42,7 @@ NeuronUnit<-function(unit){
 			    ConservationLaw="\t%s = %s : conservation law",
 			    expression="\t%s : a pre-defined algebraic expression",
 			    flux="\t%s : a flux, for use in DERIVATIVE mechanism",
-			    comment="\t: Compound %s with initial condition %g had derivative %s, but is calculated by conservation law.",
+			    comment="\t: Compound %s with initial condition %s had derivative %s, but is calculated by conservation law.",
 			    state="\t%s (%s) : a state variable",
 			    ode="\t%s' = %s : affects compound %s",
 			    reactigon="\t %s <-> %s (%s, %s)",
