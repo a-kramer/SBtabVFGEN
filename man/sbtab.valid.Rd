@@ -7,7 +7,7 @@
 sbtab.valid(tab)
 }
 \arguments{
-\item{tab}{a list of lists as returned by `sbtab_from_tsv()`}
+\item{tab}{a list of data.frames as returned by `sbtab_from_tsv()`}
 }
 \description{
 This function checks the SBtab document for consistency.

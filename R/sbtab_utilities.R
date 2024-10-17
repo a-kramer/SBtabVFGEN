@@ -161,8 +161,8 @@ sbtab.header.value <- function(sbtab.header,key='Document'){
 	if (length(m)>0){
 		property <- m[2] # so the first experssion in parentheses
 	} else {
-		warning(sprintf("property «%s» not set in SBtab header: «%s».",key,header))
-		property <- NULL
+		warning(sprintf("property «%s» not set in SBtab header: «%s».",key,sbtab.header))
+		property <- ""
 	}
 	return(property)
 }
@@ -214,6 +214,7 @@ sbtab_from_tsv <- function(tsv.file=dir(pattern='[.]tsv$'),verbose=TRUE){
 	document.name <- sbtab.header.value(header,"Document")
 	if (verbose) printf("[tsv] file[1] «%s» belongs to Document «%s»\n\tI'll take this as the Model Name.\n",tsv.file[1],document.name)
 	for (f in tsv.file){
+		cat(f,"\n")
 		header <- readLines(f,n=1)
 		TableName <- sbtab.header.value(header,'TableName')
 		SBtab[[TableName]] <- read.delim(f,as.is=TRUE,skip=1,check.names=FALSE,comment.char="%",blank.lines.skip=TRUE,row.names=1)
@@ -337,7 +338,7 @@ id.eq.name <- function(T){
 #' This function checks the SBtab document for consistency.
 #' It finds misspelled varibale names in the reaction kinetics.
 #'
-#' @param tab a list of lists as returned by `sbtab_from_tsv()`
+#' @param tab a list of data.frames as returned by `sbtab_from_tsv()`
 #' @export
 sbtab.valid <- function(tab){
 	stopifnot("Reaction" %in% names(tab))
