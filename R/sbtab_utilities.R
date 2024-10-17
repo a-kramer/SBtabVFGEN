@@ -212,14 +212,17 @@ sbtab_from_tsv <- function(tsv.file=dir(pattern='[.]tsv$'),verbose=TRUE){
 	SBtab <- list()
 	header <- readLines(tsv.file[1],n=1)
 	document.name <- sbtab.header.value(header,"Document")
-	if (verbose) printf("[tsv] file[1] «%s» belongs to Document «%s»\n\tI'll take this as the Model Name.\n",tsv.file[1],document.name)
+	if (verbose) {
+	   printf("[tsv] file[1] «%s» belongs to Document «%s»\n\tI'll take this as the Model Name.\n",basename(tsv.file[1]),document.name)
+	}
 	for (f in tsv.file){
-		cat(f,"\n")
+		if (verbose) cat(basename(f)," ")
 		header <- readLines(f,n=1)
 		TableName <- sbtab.header.value(header,'TableName')
 		SBtab[[TableName]] <- read.delim(f,as.is=TRUE,skip=1,check.names=FALSE,comment.char="%",blank.lines.skip=TRUE,row.names=1)
 		attr(SBtab[[TableName]],"TableName") <- TableName
 	}
+	if (verbose) cat("\n")
 	comment(SBtab) <- document.name
 	return(SBtab)
 }
