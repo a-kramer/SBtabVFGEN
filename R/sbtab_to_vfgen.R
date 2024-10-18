@@ -565,6 +565,7 @@ paste_tag <- function(Name, Attributes, indent=" "){
 	}
 	tar(paste0(H,".tar.gz"),files=files,compression="gzip")
 	zip(paste0(H,".zip"),files=files)
+	file.remove(files)
 }
 
 
