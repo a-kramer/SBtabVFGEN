@@ -542,8 +542,8 @@ paste_tag <- function(Name, Attributes, indent=" "){
 		write.table(Output[,'Formula'],row.names=row.names(Output),col.names=FALSE,sep='\t',file="OutputFunctions.txt",quote=FALSE)
 		files<-c(files,"OutputFunctions.txt")
 	}
-	ODE<-data.frame(rhs=ODE,row.names=row.names(Compound))
-	write.table(ODE[i,],row.names=FALSE,col.names=FALSE,sep='\t',file="ODE.txt",quote=FALSE)
+	ODE<-data.frame(rhs=ODE[i],row.names=CNames[i])
+	write.table(ODE,row.names=TRUE,col.names=FALSE,sep='\t',file="ODE.txt",quote=FALSE)
 	if (!is.null(tf)){
 		effect_label <- c('var','par')
 		a <- FALSE
