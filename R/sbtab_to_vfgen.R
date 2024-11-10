@@ -281,7 +281,8 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 		# update from Table of Transformations:
 		stf <- update_from_table(stf,SBtab$Transformation)
 		ptf <- update_from_table(ptf,SBtab$Transformation)
-		tf <- list(state=stf,param=ptf)
+		tf <- rbind(ptf,stf)
+		attr(tf,"type") <- c(rep('par',NROW(ptf)),rep('var',NROW(stf)))
 		print(tf)
 		return(tf)
 	} else {
@@ -490,13 +491,12 @@ paste_tag <- function(Name, Attributes, indent=" "){
 	vfgen[["endmodel"]] <- "</VectorField>"
   if (!is.null(tf)) {
 		vfgen[["tfComment"]] <- "<!-- VFGEN doesn't have a Transformation mechanism, the following matter will not be parsed by the vfgen tool -->"
-		N <- NCOL(tf[[1]])
-		tfName <- colnames(tf[[1]])
-		TF <- as.data.frame(rbind(cbind(tf$param,Type='par'),cbind(tf$state,Type='var')))
+		N <- NCOL(tf)
+		tfName <- colnames(tf)
 		TF_TEXT <- list()
 		for (j in seq(N)){
-			trivial <- rownames(TF) == TF[[j]]
-			A <- data.frame(Name=rownames(TF)[!trivial],Type=TF$Type[!trivial],Formula=TF[[j]][!trivial])
+			trivial <- rownames(tf) == tf[[j]]
+			A <- data.frame(Name=rownames(tf)[!trivial],Type=attr(tf,'type')[!trivial],Formula=tf[,j][!trivial])
 			TF_TEXT[[j]] <- c(sprintf(" <Transformation Name=\"%s\">",tfName[j]),paste_tag("Assign",A,indent='  ')," </Transformation>")
 		}
 		vfgen[["appendix"]] <- c("<Appendix>",TF_TEXT,"</Appendix>")
@@ -545,21 +545,17 @@ paste_tag <- function(Name, Attributes, indent=" "){
 	ODE<-data.frame(rhs=ODE[i],row.names=CNames[i])
 	write.table(ODE,row.names=TRUE,col.names=FALSE,sep='\t',file="ODE.txt",quote=FALSE)
 	if (!is.null(tf)){
-		effect_label <- c('var','par')
 		a <- FALSE
-		for (j in seq_along(names(tf))){
-			for (i in seq(NCOL(tf[[j]]))){
-				f <- tf[[j]][,i]
-				trivial <- (names(f) == f) # this means that no transformation occurs
-				F <- f[!trivial]           # only non-trivial transformations are written
-				tag <- character(length(F))
-				tag[] <- effect_label[j]
-				event_label <- character(length(F))
-				event_label[] <- colnames(tf[[j]])[i]
-				EVT <- data.frame(event=event_label,affects=tag,var=names(F),Formula=F)
-				write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=a)
-				a <- TRUE
-			}
+		for (i in seq(NCOL(tf))){
+			f <- tf[,i]
+			trivial <- (names(f) == f) # this means that no transformation occurs
+			F <- f[!trivial]           # only non-trivial transformations are written
+			tag <- attr(tf,'type')[!trivial]   # var or par
+			event_label <- character(length(F))
+			event_label[] <- colnames(tf)[i]
+			EVT <- data.frame(event=event_label,affects=tag,var=names(F),Formula=F)
+			write.table(EVT,row.names=FALSE,col.names=FALSE,sep='\t',file="Transformations.txt",quote=FALSE,append=a)
+			a <- TRUE
 		}
 		files<-c(files,"Transformations.txt")
 	}

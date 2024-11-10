@@ -424,9 +424,10 @@ time.series <- function(outputValues,outputTimes=as.double(1:dim(outputValues)[2
 
 infer_tf <- function(ename,tab){
 	if (nzchar(ename) && ename %in% names(tab)){
-	n.sv <- nrow(tab$Compound)
-	n.par <- nrow(tab$Parameter) + ni
-	n.t <- nrow(tab[[ename]])
+	n.sv <- NROW(tab$Compound)
+	ni <- NROW(tab$Input)
+	n.par <- NROW(tab$Parameter) + ni
+	n.t <- NROW(tab[[ename]])
 	tf <- list(
 		state=list(
 			A=array(1.0,dim=c(n.sv,1,n.t)),
@@ -478,11 +479,7 @@ sbtab.events <- function(ename,tab){
 	if (all(is.na(ename))) {
 		return(NULL)
 	}
-	if ("Input" %in% names(tab)){
-		ni <- nrow(tab$Input)
-	} else {
-		ni <- 0
-	}
+	ni <- NROW(tab$Input)
 	event.time <- as.double(tab[[ename]][["!Time"]])
 	if ("Dose" %in% names(tab[[ename]])){
 		event.dose <- as.double(tab[[ename]][["!Dose"]])
@@ -494,7 +491,7 @@ sbtab.events <- function(ename,tab){
 		tf_index <- match(tf_sequence,rownames(tf))
 		Events <- list(time=event.time,label=tf_index-1,dose=tf_dose)
 		comment(Events) <- "scheduled custom transformation function events"
-  } else {
+	} else {
 		tf <- infer_tf(ename,tab)
 		Events <- list(time=event.time,tf=tf)
 		comment(Events) <- "scheduled linear transformation events"
