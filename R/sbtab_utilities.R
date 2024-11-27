@@ -534,7 +534,7 @@ sbtab.data <- function(tab,conLaws=NULL){
 	out.id <- row.names(tab$Output)
 	cons <- NULL
 	initVal <- sbtab_quantity(tab$Compound)
-	if (!is.null(conLaws)){
+	if (!is.null(conLaws) && !any(is.na(conLaws))){
 		lawMatrix <- attr(conLaws,"lawMatrix")
 		conservedConst <- t(lawMatrix) %*% update_from_table(initVal,E)
 		initVal <- update_from_table(initVal[-conLaws$Eliminates],E) # this is the full vector
