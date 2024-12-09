@@ -1,7 +1,3 @@
-<!-- badges: start -->
-[![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/a-kramer/SBtabVFGEN/master?urlpath=rstudio)
-<!-- badges: end -->
-
 # SBtabVFGEN
 
 Convert a Model written in [SBtab](https://www.sbtab.net/), saved as a
