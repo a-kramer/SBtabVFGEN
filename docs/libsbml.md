@@ -50,6 +50,7 @@ this functions carries most of the weight here).
 ### The reverse of parseFormula
 
 This is pribably a rare case, but a formula given in MathML can also be used directly, given a file with MathML content
+
 ```xml formula.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <math xmlns="http://www.w3.org/1998/Math/MathML">
@@ -61,7 +62,9 @@ This is pribably a rare case, but a formula given in MathML can also be used dir
   </apply>
 </math>
 ```
+
 a formula object can be created via:
+
 ```R
 > formula.xml<-paste0(readLines("formula.xml"),collapse="\n")
 > F<-readMathMLFromString(formula.xml)
