@@ -18,7 +18,7 @@ writeSBML(model, "sthsth.xml");
 
 In General, math expressions for use in SBML can be written directly
 as MathML, or starting with infix notation strings which are converted to
-MathML. 
+MathML.
 
 Probably the most convenient way is to use the functions
 `parseL3Formula` and `writeMathMLToString` to inspect the results.
@@ -163,5 +163,5 @@ astMath <- parseFormula(MathString); # or: readMathMLFromString(mathXMLString);
 KineticLaw_setMath(kl, astMath);
 
 ```
-  
+
 

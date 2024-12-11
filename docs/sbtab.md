@@ -13,7 +13,7 @@ In contrast to the [official
 documentation](https://www.sbtab.net/sbtab/default/documentation.html),
 we need all tables to be kept in their own respective `.tsv` file (not
 all tables in one huge tsv file), or different sheets of the same
-`ods` file (the official SBtab project uses `.xlsx`). 
+`ods` file (the official SBtab project uses `.xlsx`).
 
 We don't use any of the code from the original [SBtab
 authors](https://www.sbtab.net/sbtab/default/team.html).
@@ -48,12 +48,10 @@ characters appear outside of Formulas and IDs, they may be harmless.
 Of course you can use [perl](https://www.perl.org/) directly, or
 anything else that has regular expressions.
 
-
-
 ## ID and Name of Quantites
 
 All tables require a unique `!ID` column (the ID can be seen as a key
-for associative arrays aka _dictionaries_ or _hash tables_). The
+for associative arrays; _dictionaries_, _hash tables_). The
 `!Name` column must be unique as well and the entries should work as
 variable names in the language that you plan to convert the model to
 (in some formats the rules for `Name` entries are more lenient than
@@ -73,7 +71,7 @@ illegal in other languages).
 
 Many numbers can be given in a specified scale (like `log`), these
 numbers will be converted to linear scale when a model file is written
-to file. 
+to file.
 
 Let a quantity `y` be measured in unit `M` (`y` is a number
 followed by a unit, `y/M` is just a number), and `!Scale` be set to
@@ -81,32 +79,32 @@ followed by a unit, `y/M` is just a number), and `!Scale` be set to
 `z=log10(y/M)`. The script will do the inverse to generate the model
 and pass the unit on to `.mod` files. Here are some examples:
 
-| z | y | scale indicator |
-|-----:|:---:|:-----|
-|`-5`|10¯⁵|`log10`|
-||1.0E-5|`base-10 logarithm`|
-|---|---|---|
-|`1.2`|3.32|`log`|
-||3.32|`ln`|
-||3.32|`natural logarithm`|
-|---|---|---|
-|`1.6`|1.6|`lin`|
-||1.6|`linear`|
+|     z | y         | scale indicator     |
+|------:|:---------:|:--------------------|
+|  `-5` | $10^{-5}$ | `log10`             |
+|       | 1.0E-5    | `base-10 logarithm` |
+|------:|:---------:|:--------------------|
+| `1.2` | 3.32      | `log`               |
+|       | 3.32      | `ln`                |
+|       | 3.32      | `natural logarithm` |
+|------:|:---------:|:--------------------|
+| `1.6` | 1.6       | `lin`               |
+|       | 1.6       | `linear`            |
 
 ## Compound
 
 This table defines the compounds that are supposed to be modeled by
 state variables and are subject to change by the reactions in the
-systems. 
+systems.
 
-| Column | Values  | Comment |
-| -----: | :-----: | :------ |
-| !Scale | log, log10, linear | and some variants of these|
-| !InitialValue | a number | (per unit) in the above scale |
-| !Unit | the unit of the above number | as it would be in linear scale |
-| !SteadyState | `TRUE` | this compound should reach a steady state in at least one scenario and you want to know whether this happened |
-|              |`FALSE` | it is not important whether or not this compound reaches steady state|
-| !Assignment| `Name` or `ID`| this field will assign a pre-defined algebraic expression to the compound|
+|        Column | Values                       | Comment                                                                                                       |
+|--------------:|:----------------------------:|:--------------------------------------------------------------------------------------------------------------|
+|        !Scale | log, log10, linear           | and some variants of these                                                                                    |
+| !InitialValue | a number                     | (per unit) in the above scale                                                                                 |
+|         !Unit | the unit of the above number | as it would be in linear scale                                                                                |
+|  !SteadyState | `TRUE`                       | this compound should reach a steady state in at least one scenario and you want to know whether this happened |
+|               | `FALSE`                      | it is not important whether or not this compound reaches steady state                                         |
+|   !Assignment | `Name` or `ID`               | this field will assign a pre-defined algebraic expression to the compound                                     |
 
 The conversion script will make a file called
 `[…]SuggestedOutput.tsv`, it will have lines that can be used to check
@@ -255,7 +253,7 @@ The data sheets are not used by `sbtab_to_vfgen()`, but they are used for Parame
 
 These will be local variables of the model. These variables store a
 one line mathematical expression for reusability of the resulting
-value. 
+value.
 
 Expressions are assignments that are calculated repeatedly each
 time the ODEs right hand side is called (before fluxes are calculated).
@@ -268,7 +266,7 @@ as the right hand side of the assignment.
 This table holds the mapping between input parameters and data
 sheets. It determines the conditions under which a data set should be
 replicated using the model. The _conditions_ als include _events_ that
-need to happen to replicate an experiment. 
+need to happen to replicate an experiment.
 
 |   Column | Values        | Comment |
 | -------: | :-----------: | :------ |
@@ -282,18 +280,66 @@ and interpretation of _the input_ and _output_ concepts.
 
 ## Events
 
-Events are instantaneous
-changes in state variables or inputs at speciefied points in time
-(events with complex triggers are not supported by any f our code yet).
+Events are sudden changes in state variables or inputs at
+speciefied points in time.
+
+The table `Transformation` defines what sudden transformation the
+model is capable of. For each experiment an additional _event
+schedule_ table assigns time points to transformation events.
+
+```
+!!SBtab TableName='Transformation' Document='MyModel'
+ !ID  >A        >B     >C
+ TF1  A-B*dose  B      C
+ TF2  A         B/2    C
+ TF3  A*0.1     B*0.1  C*0.1
+```
+
+Each row describes a named transformation, where the column names make
+a reference to the affected variable. Row `TF1` means `A <- A-B*dose`
+(other variables are unaffected).
+
+Events will interrupt the ODE solver in the rgsl package (not other
+solvers), change the values of input parameters, or state variables
+according to the available named tranformations (see above). After the
+transformation the solver is re-initialized to continue from there.
+
+```
+!!SBtab TableName='EventScheduleAlpha' Document='myModel'
+  !TimePoint  !Time  !Tranformation !Dose
+ Event0Time0  10.0   TF1            0.1
+ Event0Time0  11.0   TF2            0.2
+         ...  ...    ...
+```
+
+The event schedule creates a time sequence for transformation events.
+
+```
+!!SBtab TableName='Experiments' Document='myModel'
+               !ID  !Type          !Time  !T0    !Event              !Citation
+    Smith2019Fig2E  Time Series    600.0  -100.0  EventScheduleAlpha  https//doi.org/10.[...]
+               ...  ...            ...    ...     ...                ...
+```
+
+And finally the table of experiments will assign each exeriment (rows)
+the appropriate sequence of transformation events. Event formulas may
+also refer to the `dose` of a transformation, and a `!Dose` column in
+the schedule can assign each time-point an event dose that is local to
+that specific time and event.
+
+### Old Event System
+
+An older event type assumed linear transformations (and affine
+transformations). This is discouraged now.
 
 Eventtables have a `!Time` column and an effect column, where the
 header combines a target and operation: `>OPERATION:TARGET`. An example:
 
-|!TimePoint|!Time|>ADD:Ca|
-|---:|:---:|:----|
-|TP0|100|1e3|
-|TP0|200|1e3|
-|TP0|300|1e3|
+| !TimePoint | !Time | >ADD:Ca |
+|-----------:|:-----:|:--------|
+|        TP0 | 100   | 1e3     |
+|        TP0 | 200   | 1e3     |
+|        TP0 | 300   | 1e3     |
 
 
 In this example, we add 1000 units of Ca, every 100 time-units. The

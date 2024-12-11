@@ -1,15 +1,15 @@
 # Units
 
 SBML has support for units in all quantities. The units are specified using these 4 properties: `kind`, `scale`, `multiplier`, and `exponent` .
-These unit attributes are interpreted like this: 
+These unit attributes are interpreted like this:
 
 ```
 (multiplier * kind * 10^scale)^exponent
 ```
-or, if you prefer: 
+or, if you prefer:
 ```
 power(prod(multiplier,kind,power(10.0,scale)),exponent)
-``` 
+```
 
 The `kind` can be any [SI](https://en.wikipedia.org/wiki/International_System_of_Units) base unit, e.g. `second`.
 Other units can be derived using products of these base units, `liter/(nanomole millisecond)` is expressed as:
@@ -35,7 +35,7 @@ additional rules on unit-strings:
    - derived units such as `Newton` or `Hz` are not understood (liter is the only exception)
    - not all SI prefixes are understood, but the most common ones are (G,M,k,c,m,µ,n,p,f)
 1. Only one slash is allowed (the slash has the lowest precedence)
-   - `liter / mole second` is ok 
+   - `liter / mole second` is ok
    - `1/((mole/liter) * second)` is not ok (because it has two slashes)
    - multiplication has higher precedence than division
 1. All parentheses are ignored
@@ -73,19 +73,18 @@ pat <- paste0("^(G|giga|M|mega|k|kilo|c|centi|m|milli|u|μ|micro|n|nano|p|pico|f
 
 ```
 
-   
 ## A list of perfectly fine units
 
 Newton, Hertz and M are not parsed automatically, use the long form in column 2.
 
-|meaning|suggested string| kind | scale | exponent |
-|------:|:---------------|:----:|:-----:| :-------:|
-|Newton| `kg m s-2` | `"gram"` | +3 | 1 |
-||| `"metre"` | 1 | 1 |
-||| `"second"` | 1 | -2 |
-|nanomolarity (`nM`)| `nmol/l` | `"mole"` | -9 | 1 |
-||| `"litre"` |  1 | -1 |
-|kHz| `ms^-1`| `"second"` | -3 | -1 |
+|             meaning | suggested string | kind       | scale | exponent |
+|--------------------:|:-----------------|:----------:|:-----:|:--------:|
+|              Newton | `kg m s-2`       | `"gram"`   | +3    | 1        |
+|                     |                  | `"metre"`  | 1     | 1        |
+|                     |                  | `"second"` | 1     | -2       |
+| nanomolarity (`nM`) | `nmol/l`         | `"mole"`   | -9    | 1        |
+|                     |                  | `"litre"`  | 1     | -1       |
+|                 kHz | `ms^-1`          | `"second"` | -3    | -1       |
 
 Please be aware that the SBML units themselves are not always
 interpreted right by SBML importers (in other software). So, not always is it an error of this script if a different software displays a different unit than was intended.
@@ -98,7 +97,7 @@ so `kHz` is written as `1000/s = 1/0.001 s = ms^-1` once broken down to base uni
 
 Some software, including NEURON has units imposed by the environment
 in which the subcellular model is embedded. So the units are expected
-to be compaible to the simulator. 
+to be compaible to the simulator.
 
 In this case the user must write a
 model file using those imposed units.

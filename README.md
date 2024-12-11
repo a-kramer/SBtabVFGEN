@@ -7,43 +7,30 @@ Spreadsheet](https://www.documentfoundation.org/) `ods` to a
 `vf`.
 
 This project is supported by [EBRAINS](https://ebrains.eu)
-infrastructure and the [Human Brain
-Project](https://www.humanbrainproject.eu), with more detail in [acknowledgements](./ACKNOWLEDGMENTS.md).
+infrastructure and the [Human Brain Project](https://www.humanbrainproject.eu),
+with more detail in [acknowledgements](./ACKNOWLEDGMENTS.md).
 
 ## Install
 
 Using `remotes`:
+
 ```R
 remotes::install_github("a-kramer/SBtabVFGEN")
 ```
+
 You may have to check `.libPaths()` to verify that it includes a path
 that you have permission to write to (this is just generally the case,
 not just for this package).
 
 Currently, this will work on platforms that have
 [R](https://www.r-project.org/). But, any user who needs SBML output
-must install the libSBML package for R. 
-
-This is entirely optional, but SBML files may be useful to share
-models with others. This is not easy, as `libSBML` is not a
-[cran](https://cran.r-project.org/) package, nor is it on
-github/lab. But browsing the [SBML
-repository](https://sourceforge.net/p/sbml/libsbml/) on sourceforge
-makes it possible to find the right version of the [R
-interface](https://sourceforge.net/projects/sbml/files/libsbml/5.18.0/stable/R%20interface/).
-
-Download the `tar.gz` file `libSBML_*.tar.gz` in the appropriate
-version, and the install it as a package using
-
-```sh
-$ R CMD INSTALL liblibSBML_*.tar.gz
-```
+must install the libSBML package for R (the R bindings to libsbml).
 
 ## Purpose
 
 This model conversion tool can be used by scientists working in the
 field of _systems biology_ and all adjacent fields that work with
-_ordinary differential equation_ (ODE) models. 
+_ordinary differential equation_ (ODE) models.
 
 It can be helpful when collaborating with other researchers as it keeps
 the model separate from any programming language choice. The user writes the model
@@ -100,7 +87,10 @@ An additional R [script](./R/sbtab_to_vfgen) can be called from the commandline;
 $ alias sbtab_to_vfgen='.../path/to/R/sbtab_to_vfgen'
 $ sbtab_to_vfgen *.tsv
 ```
-This will work if the `.tsv` files have acceptable SBtab content.
+
+This will work if the `.tsv` files have acceptable SBtab content. Or
+create a symbolic link in a directory that is in your `PATH`
+environment variable.
 
 ## Other Output Formats 
 
@@ -184,7 +174,7 @@ package:
 
 ```R
 library("SBtabVFGEN")
-model.ods <- "examplemodel.ods" 
+model.ods <- "examplemodel.ods"
 if (file.exists(model.ods){
  model.sbtab <- sbtab_from_ods(model.ods)
  sbtab_to_vfgen(model.sbtab)
@@ -203,26 +193,50 @@ office_ export to `tsv` _one sheet at a time_ (with no easy
 workarounds) and lack an option to export _N_ sheets into _N_
 files. Gnumeric's `ssconvert` command does.
 
+An alternative to `ssconvert` is
+[nushell](https://www.nushell.sh/). This shell can open ods files (and
+excel files) natively and convert all sheets (in a loop) to tsv files.
+
+Here is a nushell example to get all of the tabular content of an
+ods file with several sheets into individual tsv files:
+
+```nu
+open sbtab.ods | columns | each {|sheet| open sbtab.ods | get $sheet | skip 1 | headers | save $"($sheet).tsv" }
+```
+where the `columns` command gets all of the sheet names.
+
+Another alternative is to use the high level programming language you
+are most familiar with and find the bindings/packages/libraries that
+enable reading and writing these files.
+
+All languages can parse tsv files.
+
 # Systems Biology Markup Language (SBML level 2 version 4)
 
-The program `sbtab_to_vfgen.R` also produces an `.xml` file in the _Systems Biology Markup Language_ (SBML).
-This is only done, if _libsbml_ is installed with `R` bindings, like this:
+SBML files may be useful to share models with others. Currently, this
+is not easy, as `libSBML` is not a [cran](https://cran.r-project.org/)
+package, nor is it on github/lab. But browsing the [SBML
+repository](https://sourceforge.net/p/sbml/libsbml/) on sourceforge
+makes it possible to find the right version of the [R
+interface](https://sourceforge.net/projects/sbml/files/libsbml/5.18.0/stable/R%20interface/).
 
-```bash
-$ R CMD INSTALL libSBML_5.18.0.tar.gz
+Download the `tar.gz` file `libSBML_*.tar.gz` in the appropriate
+version, and the install it as a package using
+
+```sh
+$ R CMD INSTALL liblibSBML_*.tar.gz
 ```
 
-If this check: `if (requireNamespace(libSBML))` succeeds, then the
-scripts attempts to make an sbml file. SBML is a format that has
-units, and the units defined in SBtab are forwarded to SBML. The
-formats are very different with regard to unit handling and math
-generally. The method we use to parse human readble text units is
-described in [units.md](./docs/units.md).
+Afterwards, the function `sbtab_to_vfgen()` produces an `.xml` file in the _Systems Biology Markup Language_ (SBML).
+
+SBML is a format that has units, and the units defined in SBtab are
+forwarded to SBML. The formats are very different with regard to unit
+handling and math generally. The method we use to parse human readble
+text units is described in [units.md](./docs/units.md).
 
 [Here](./docs/libsbml.md) is a small (incomplete) list of libsbml
-functions in R (that we used). An auto-generated [full
-list](./libSBMLused.md), without comments, is also present.
+functions in R (that we used). An auto-generated [full list](./libSBMLused.md), without comments, is also present.
 
-There is a more modern level of SBML, level 3, but this package lacks
+SBML level 3 exists, but this package lacks
 the ability to generate this format.
 
