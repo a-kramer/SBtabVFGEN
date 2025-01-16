@@ -130,7 +130,7 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 	Formula <- SBtab[["Reaction"]][["!ReactionFormula"]]
 	Flux <- SBtab[["Reaction"]][["!KineticLaw"]]
 	IsReversible <- SBtab[["Reaction"]][["!IsReversible"]]
-	Reaction <- data.frame(Formula,Flux,IsReversible,row.names=row.names(SBtab$Reaction))
+	Reaction <- data.frame(Flux,Formula,IsReversible,row.names=row.names(SBtab$Reaction))
 	return(Reaction)
 }
 
@@ -517,19 +517,17 @@ modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,
 		model$const <- ch(Constant)
 	}
 	odeModel$par <- c(ch(Parameter),ch(Input),ch(ConLaw))
-	if (!is.null(Expression)) {
-		odeModel$exp <- c(
-			ch(Expression),
-			sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula)
-		)
-	}
+	odeModel$exp <- c(
+		ch(Expression),
+		sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula),
+		ch(Reaction)
+	)
+
 	if (is.null(ConLaw)) {
 		i <- seq(NROW(Compound))
 	} else {
 		i <- (-ConLaw$Eliminates)
 	}
-	print(ConLaw$Eliminates)
-	print(i)
 	odeModel$var <- ch(Compound[i,])
 	odeModel$vf <- ODE[i]
 	odeModel$func <- ch(Output)
@@ -740,5 +738,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	cat(unlist(Mod),sep="\n",file=fname)
 	message(sprintf("The mod content was written to: %s\n",fname))
 	saveRDS(ConLaw,file="ConservationLaws.RDS")
-	return(modelAsList(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf))
+	m <- modelAsList(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf)
+	comment(m) <- H
+	return(m)
 }
