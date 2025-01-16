@@ -489,7 +489,7 @@ paste_tag <- function(Name, Attributes, indent=" "){
 	## Output Functions
 	vfgen[["function"]] <- sprintf(fmt$output,row.names(Output),Output$Formula)
 	vfgen[["endmodel"]] <- "</VectorField>"
-  if (!is.null(tf)) {
+	if (!is.null(tf)) {
 		vfgen[["tfComment"]] <- "<!-- VFGEN doesn't have a Transformation mechanism, the following matter will not be parsed by the vfgen tool -->"
 		N <- NCOL(tf)
 		tfName <- colnames(tf)
@@ -502,6 +502,40 @@ paste_tag <- function(Name, Attributes, indent=" "){
 		vfgen[["appendix"]] <- c("<Appendix>",TF_TEXT,"</Appendix>")
 	}
 	return(vfgen)
+}
+
+ch <- \(df) {
+	if (is.null(df)) return(NULL)
+	v <- df[[1]]
+	names(v) <- rownames(df)
+	return(v)
+}
+
+modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL,tf=NULL){
+	odeModel <- list()
+	if (!is.null(Constant)){
+		model$const <- ch(Constant)
+	}
+	odeModel$par <- c(ch(Parameter),ch(Input),ch(ConLaw))
+	if (!is.null(Expression)) {
+		odeModel$exp <- c(
+			ch(Expression),
+			sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula)
+		)
+	}
+	if (is.null(ConLaw)) {
+		i <- seq(NROW(Compound))
+	} else {
+		i <- (-ConLaw$Eliminates)
+	}
+	print(ConLaw$Eliminates)
+	print(i)
+	odeModel$var <- ch(Compound[i,])
+	odeModel$vf <- ODE[i]
+	odeModel$func <- ch(Output)
+	odeModel$conservationLaws <- ConLaw
+	if (!is.null(tf)) odeModel$tf <- tf
+	return(odeModel)
 }
 
 .write.txt <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL,tf=NULL){
@@ -563,7 +597,6 @@ paste_tag <- function(Name, Attributes, indent=" "){
 	zip(paste0(H,".zip"),files=files)
 	file.remove(files)
 }
-
 
 #' SBtab content exporter
 #'
@@ -690,8 +723,7 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 			}
 		}
 	} else {
-		Laws <- NULL
-		ConLaw <- NA
+		ConLaw <- NULL
 	}
 	##
 	PrintSteadyStateOutputs(Compound,ODE,Reaction,document.name)
@@ -708,5 +740,5 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	cat(unlist(Mod),sep="\n",file=fname)
 	message(sprintf("The mod content was written to: %s\n",fname))
 	saveRDS(ConLaw,file="ConservationLaws.RDS")
-	return(ConLaw)
+	return(modelAsList(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw,tf))
 }
