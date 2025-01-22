@@ -90,7 +90,8 @@ AppendAmounts <- function(S,Quantity,QuantityName,Separator){
 		message(LawText)
 		message(sprintf("This will comment out compound %i («%s», initial value: %s), Conserved Constant = %f\n",k,CompoundName[k],InitialValue[k],Const))
 	}
-	ConLaw <- as.data.frame(ConLaw,row.names=ConLaw$ConstantName)
+	k <- ConLaw$Eliminates
+	ConLaw <- as.data.frame(ConLaw,row.names=CompoundName[k])
 	return(ConLaw)
 }
 
@@ -516,10 +517,16 @@ modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,
 	if (!is.null(Constant)){
 		model$const <- ch(Constant)
 	}
-	odeModel$par <- c(ch(Parameter),ch(Input),ch(ConLaw))
+	## add conserved constant to parameter list:
+	xc <- ConLaw$Constant
+	names(xc) <- ConLaw$ConstantName
+	odeModel$par <- c(ch(Parameter),ch(Input),xc)
+	## add conserved expression to list of expressions:
+	x <- sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula)
+	names(x) <- rownames(ConLaw)
 	odeModel$exp <- c(
 		ch(Expression),
-		sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula),
+		x,
 		ch(Reaction)
 	)
 
@@ -555,7 +562,7 @@ modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,
 	if (!is.null(ConLaw) && !any(is.na(ConLaw)) && is.list(ConLaw)) {
 		k <- ConLaw$Eliminates
 		CName <- row.names(Compound)[k]
-		write.table(ConLaw[,c('Constant')],row.names=row.names(ConLaw),col.names=FALSE,sep='\t',append=TRUE,file="Parameters.txt",quote=FALSE)
+		write.table(ConLaw[,c('Constant')],row.names=ConLaw$ConstantName,col.names=FALSE,sep='\t',append=TRUE,file="Parameters.txt",quote=FALSE)
 		F <- sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula)
 		names(F) <- CName
 		write.table(F,row.names=TRUE,col.names=FALSE,sep='\t',append=TRUE,file="Expressions.txt",quote=FALSE)
