@@ -521,7 +521,7 @@ modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,
 	xc <- ConLaw$Constant
 	names(xc) <- ConLaw$ConstantName
 	odeModel$par <- c(ch(Parameter),ch(Input),xc)
-	## add conserved expression to list of expressions:
+	## add conserved expression to list of all expressions:
 	x <- sprintf("(%s - (%s))",ConLaw$ConstantName,ConLaw$Formula)
 	names(x) <- rownames(ConLaw)
 	odeModel$exp <- c(
@@ -537,6 +537,7 @@ modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,
 	}
 	odeModel$var <- ch(Compound[i,])
 	odeModel$vf <- ODE[i]
+	names(odeModel$vf) <- names(odeModel$var)
 	odeModel$func <- ch(Output)
 	odeModel$conservationLaws <- ConLaw
 	if (!is.null(tf)) odeModel$tf <- tf
