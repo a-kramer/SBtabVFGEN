@@ -740,7 +740,6 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	fname<-sprintf("%s.vf",H)
 	cat(unlist(vfgen),sep="\n",file=fname)
 	message(sprintf("The vf content was written to: %s\n",fname))
-
 	Mod <- .make.mod(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw)
 	fname<-sprintf("%s.mod",H)
 	cat(unlist(Mod),sep="\n",file=fname)

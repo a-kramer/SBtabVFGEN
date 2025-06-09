@@ -36,7 +36,7 @@ NeuronUnit<-function(unit){
 .make.mod <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL){
 	Mod <- list()
 	fmt <- list(const="\t%s = %s (%s) : a constant",
-			    par="\t%s = %g (%s): a kinetic parameter",
+			    par="\t%s = %g (%s): %s",
 			    input="\t%s  = %g (%s) : an input",
 			    total="\t%s = %g : the total amount of a conserved sub-set of states",
 			    ConservationLaw="\t%s = %s : conservation law",
@@ -91,8 +91,16 @@ NeuronUnit<-function(unit){
 		Parameter$Unit[l] <- gsub("\\<second\\>","millisecond",Parameter$Unit[l])
 		Parameter$Value[l] <- Parameter$Value[l]/1e3;
 	}
+	r_of_k <- sapply(row.names(Parameter),
+		\(p) {
+			ptt <- paste0("\\b",p,"\\b")
+			return(
+				ifelse(any(grepl(ptt,Reaction$Flux)),paste(Reaction$Formula[grep(ptt,Reaction$Flux)],collapse=", "),"does not appear in reactions.")
+			)
+		}
+	)
 	Mod[["PARAMETER"]] <- c("PARAMETER {",
-			                sprintf(fmt$par,row.names(Parameter),Parameter$Value, NeuronUnit(Parameter$Unit)),
+			                sprintf(fmt$par,row.names(Parameter),Parameter$Value, NeuronUnit(Parameter$Unit), r_of_k),
 			                sprintf(fmt$input,row.names(Input),Input$DefaultValue, NeuronUnit(Input$Unit)),
 			                ConservationInput,
 			                "}")
