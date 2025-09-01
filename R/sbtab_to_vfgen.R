@@ -515,7 +515,7 @@ ch <- \(df) {
 modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL,tf=NULL){
 	odeModel <- list()
 	if (!is.null(Constant)){
-		model$const <- ch(Constant)
+		odeModel$const <- ch(Constant)
 	}
 	## add conserved constant to parameter list:
 	xc <- ConLaw$Constant
