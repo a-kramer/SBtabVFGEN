@@ -548,7 +548,7 @@ sbtab.data <- function(tab,conLaws=NULL){
 		input.id <- NULL
 	}
 	n <- dim(E)[1]
-	experiments <- vector(mode="list",length=length(tab))
+	experiments <- vector(mode="list",length=NROW(E))
 	names(experiments) <- rownames(E)
 	l <- grepl("!([eE]xperiment)?[tT]ype",names(E))
 	if (any(l)){
