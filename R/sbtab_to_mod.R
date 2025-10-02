@@ -68,6 +68,7 @@ NeuronUnit<-function(unit){
 		sprintf(fmt$ion,Compound[ion,"USEION"],Compound[ion,"READ"],Compound[ion,"WRITE"],Compound[ion,"VALENCE"],rownames(Compound)[ion]),
 		"}"
 	)
+	Compound <- Compound[-ion,] # remove all ions
 	##
 	l <- grepl("0$",row.names(Compound))
 	if (any(l)) {
