@@ -63,6 +63,7 @@
 		libSBML::Species_setCompartment(sp, CompName)
 		libSBML::Species_setUnits(sp,SubstanceUnitID)
 		iv <- as.double(Compound$InitialValue[i])
+		iv[is.na(iv)] <- 0.0
 		if (any(is.na(iv))){
 			iv[is.na(iv)] <- 0.0
 			message("some initial values were set to 0 because they were not numbers.")

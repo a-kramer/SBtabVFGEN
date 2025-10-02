@@ -515,7 +515,7 @@ ch <- \(df) {
 modelAsList <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL,tf=NULL){
 	odeModel <- list()
 	if (!is.null(Constant)){
-		model$const <- ch(Constant)
+		odeModel$const <- ch(Constant)
 	}
 	## add conserved constant to parameter list:
 	xc <- ConLaw$Constant
@@ -626,12 +626,12 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 	## message("The names of the SBtab list:")
 	## message(cat(names(SBtab),sep=", "))
 	document.name <- comment(SBtab)
-	cat(sprintf("Document Name: %s.\n",document.name))
-	cat(sprintf("SBtab has %i tables.\n",length(SBtab)))
-	cat("The names of SBtab[[1]]:\n")
-	cat(colnames(SBtab[[1]]),sep=", ")
-	cat("\n")
-	print(SBtab$Reaction)
+	message(sprintf("Document Name: %s.",document.name))
+	message(sprintf("SBtab has %i tables.",length(SBtab)))
+	message("The names of SBtab[[1]]:")
+	message(paste0(colnames(SBtab[[1]]),collapse=", "))
+
+	#print(SBtab$Reaction)
 	Reaction <- .GetReactions(SBtab)
 	Constant <- .GetConstants(SBtab)
 	Expression <- .GetExpressions(SBtab)
@@ -660,11 +660,8 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 		message(sprintf("class(IsConstant): %s.\n",class(IsConstant)))
 		CC <- Compound[IsConstant,]
 		NewExpression <- data.frame(Formula=CC$InitialValue,Unit=CC$Unit,row.names=row.names(CC))
-		print(NewExpression)
 		Expression <- rbind(Expression,NewExpression)
-		print(Expression)
 		Compound <- Compound[!IsConstant,]
-		print(row.names(Expression))
 	}
 	message("---")
 	if ("Assignment" %in% names(Compound)){
@@ -691,7 +688,6 @@ sbtab_to_vfgen <- function(SBtab,cla=TRUE){
 		}
 		if (any(l)){
 			NewExpression <- data.frame(ID=Compound[l,"ID"],Formula=F[l],Unit=U[l],row.names=row.names(Compound[l,]))
-			print(NewExpression)
 			Expression <- rbind(Expression,NewExpression)
 			Compound <- Compound[!l,]
 		}
