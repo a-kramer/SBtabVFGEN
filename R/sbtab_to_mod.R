@@ -35,19 +35,22 @@ NeuronUnit<-function(unit){
 
 .make.mod <- function(H,Constant,Parameter,Input,Expression,Reaction,Compound,Output,ODE,ConLaw=NULL){
 	Mod <- list()
-	fmt <- list(const="\t%s = %s (%s) : a constant",
-			    par="\t%s = %g (%s): %s",
-			    input="\t%s  = %g (%s) : an input",
-			    total="\t%s = %g : the total amount of a conserved sub-set of states",
-			    ConservationLaw="\t%s = %s : conservation law",
-			    expression="\t%s : a pre-defined algebraic expression",
-			    flux="\t%s : a flux, for use in DERIVATIVE mechanism",
-			    comment="\t: Compound %s with initial condition %s had derivative %s, but is calculated by conservation law.",
-			    state="\t%s (%s) : a state variable",
-			    ode="\t%s' = %s : affects compound %s",
-			    reactigon="\t %s <-> %s (%s, %s)",
-			    output="\t%s = %s : Output ID %s",
-			    assignment="\t%s = %s : assignment for expression %s")
+	fmt <- list(
+		const="\t%s = %s (%s) : a constant",
+		par="\t%s = %g (%s): %s",
+		input="\t%s  = %g (%s) : an input",
+		total="\t%s = %g : the total amount of a conserved sub-set of states",
+		ConservationLaw="\t%s = %s : conservation law",
+		expression="\t%s : a pre-defined algebraic expression",
+		flux="\t%s : a flux, for use in DERIVATIVE mechanism",
+		comment="\t: Compound %s with initial condition %s had derivative %s, but is calculated by conservation law.",
+		state="\t%s (%s) : a state variable",
+		ode="\t%s' = %s : affects compound %s",
+		reactigon="\t %s <-> %s (%s, %s)",
+		output="\t%s = %s : Output ID %s",
+		assignment="\t%s = %s : assignment for expression %s",
+		ion="\tUSEION %s READ %s WRITE %s VALENCE %i : %s"
+	)
 	##    Mod[["header"]] <- "TITLE Mod file for componen"
 	Mod[["TITLE"]] <- sprintf("TITLE %s",H)
 	Mod[["COMMENT"]] <- sprintf("COMMENT\n\tautomatically generated from an SBtab file\n\tdate: %s\nENDCOMMENT",date())
@@ -57,12 +60,14 @@ NeuronUnit<-function(unit){
 	Range <- c(Range,OneOrMoreLines("\tRANGE",Output,": output"))
 	Range <- c(Range,OneOrMoreLines("\tRANGE",Expression,": assigned"))
 	Range <- c(Range,OneOrMoreLines("\tRANGE",Compound,": compound"))
-
-	Mod[["NEURON"]] <- c("NEURON {",
-			             sprintf("\tSUFFIX %s : OR perhaps POINT_PROCESS ?",H),
-			             Range,
-			             ": USEION ca READ cai VALENCE 2 : sth. like this may be needed for ions you have in your model",
-			             "}")
+	ion <- which(nchar(Compound$USEION)>0)
+	Mod[["NEURON"]] <- c(
+		"NEURON {",
+		sprintf("\tSUFFIX %s : OR perhaps POINT_PROCESS ?",H),
+		Range,
+		sprintf(fmt$ion,Compound[ion,"USEION"],Compound[ion,"READ"],Compound[ion,"WRITE"],Compound[ion,"VALENCE"],rownames(Compound)[ion]),
+		"}"
+	)
 	##
 	l <- grepl("0$",row.names(Compound))
 	if (any(l)) {
@@ -99,20 +104,24 @@ NeuronUnit<-function(unit){
 			)
 		}
 	)
-	Mod[["PARAMETER"]] <- c("PARAMETER {",
-			                sprintf(fmt$par,row.names(Parameter),Parameter$Value, NeuronUnit(Parameter$Unit), r_of_k),
-			                sprintf(fmt$input,row.names(Input),Input$DefaultValue, NeuronUnit(Input$Unit)),
-			                ConservationInput,
-			                "}")
+	Mod[["PARAMETER"]] <- c(
+		"PARAMETER {",
+		sprintf(fmt$par,row.names(Parameter),Parameter$Value, NeuronUnit(Parameter$Unit), r_of_k),
+		sprintf(fmt$input,row.names(Input),Input$DefaultValue, NeuronUnit(Input$Unit)),
+		ConservationInput,
+		"}"
+	)
 
 	## Expressions and Reaction Fluxes
-	Mod[["ASSIGNED"]] <- c("ASSIGNED {",
-			               "\ttime (millisecond) : alias for t",
-			               sprintf(fmt$expression,row.names(Expression)),
-			               sprintf(fmt$flux,row.names(Reaction)),
-			               sprintf("\t%s : computed from conservation law",CName),
-			               sprintf("\t%s : an observable",row.names(Output)),
-			               "}")
+	Mod[["ASSIGNED"]] <- c(
+		"ASSIGNED {",
+		"\ttime (millisecond) : alias for t",
+		sprintf(fmt$expression,row.names(Expression)),
+		sprintf(fmt$flux,row.names(Reaction)),
+		sprintf("\t%s : computed from conservation law",CName),
+		sprintf("\t%s : an observable",row.names(Output)),
+		"}"
+	)
 	Assignment <- sprintf(fmt$assignment,row.names(Expression),Expression$Formula,row.names(Expression))
 	nC <- dim.data.frame(Compound)
 	CName <- row.names(Compound)
@@ -132,18 +141,21 @@ NeuronUnit<-function(unit){
 			IVP[i] <- sprintf("\t %s = %s : initial condition",CName[i],Compound$InitialValue[i])
 		}
 	}
-	Mod[["EXPRESSION"]] <- c("PROCEDURE assign_calculated_values() {",
-			                 "\ttime = t : an alias for the time variable, if needed.",
-			                 ConservationLaw,
-			                 Assignment,
-			                 sprintf("\t%s = %s : flux expression %s",row.names(Reaction),Reaction$Flux,row.names(Reaction)),
-			                 "}")
-
+	Mod[["EXPRESSION"]] <- c(
+		"PROCEDURE assign_calculated_values() {",
+		"\ttime = t : an alias for the time variable, if needed.",
+		ConservationLaw,
+		Assignment,
+		sprintf("\t%s = %s : flux expression %s",row.names(Reaction),Reaction$Flux,row.names(Reaction)),
+		"}"
+	)
 	Mod[["STATE"]] <- c("STATE {",STATE,"}")
 	Mod[["INITIAL"]] <- c("INITIAL {",IVP,"}")
-	Mod[["BREAKPOINT"]] <- c("BREAKPOINT {","\tSOLVE ode METHOD cnexp",
-			                 "\tassign_calculated_values() : procedure",
-			                 "}")
+	Mod[["BREAKPOINT"]] <- c(
+		"BREAKPOINT {","\tSOLVE ode METHOD cnexp",
+		"\tassign_calculated_values() : procedure",
+		"}"
+	)
 	Mod[["DERIVATIVE"]] <- c("DERIVATIVE ode {",DERIVATIVE,"}")
 	## Output Functions
 	Mod[["FUNCTION"]] <- c("PROCEDURE observables_func() {",sprintf(fmt$output,row.names(Output),Output$Formula,row.names(Output)),"}")

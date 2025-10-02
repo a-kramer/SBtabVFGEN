@@ -176,6 +176,10 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 	CleanIV <- gsub("−","-", SBtab[["Compound"]][["!InitialValue"]])
 	InitialValue <- CleanIV;
 	SteadyState <- .OptionalColumn(SBtab[["Compound"]],"!SteadyState","logical")
+	USEION <- .OptionalColumn(SBtab[["Compound"]],"USEION","character")
+	READ <- .OptionalColumn(SBtab[["Compound"]],"READ","character")
+	WRITE <- .OptionalColumn(SBtab[["Compound"]],"WRITE","character")
+	VALENCE <- .OptionalColumn(SBtab[["Compound"]],"WRITE","numeric")
 	Unit <- SBtab[["Compound"]][["!Unit"]]
 	message("Units: ")
 	print(Unit)
@@ -183,7 +187,7 @@ PrintSteadyStateOutputs <- function(Compound,ODE,Reaction,document.name){
 	Assignment <- .OptionalColumn(SBtab[["Compound"]],"!Assignment","character")
 	IsConstant <- .OptionalColumn(SBtab[["Compound"]],"!IsConstant","logical")
 	Interpolation <- .OptionalColumn(SBtab[["Compound"]],"!Interpolation","logical")
-	Compound <- data.frame(InitialValue,SteadyState,Unit,IsConstant,Assignment,Interpolation,row.names=Name)
+	Compound <- data.frame(InitialValue,SteadyState,Unit,IsConstant,Assignment,Interpolation,USEION,READ,WRITE,VALENCE,row.names=Name)
 	return(Compound)
 }
 
